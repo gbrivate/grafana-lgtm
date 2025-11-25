@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+aiohttp
+aiokafka
+pydantic
+uvloop
+
+# --- OpenTelemetry Auto Instrumentation ---
+opentelemetry-distro
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-asyncio
+opentelemetry-instrumentation-aiohttp-client
+opentelemetry-instrumentation-requests

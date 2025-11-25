@@ -1,0 +1,118 @@
+rules:
+  #
+  # ────────────────────────────────────────────────
+  # 📊 Topic-Level Metrics
+  # ────────────────────────────────────────────────
+  #
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=BytesInPerSec, topic=(.+)>
+    name: kafka_topic_bytes_in_total
+    type: counter
+    labels:
+      topic: $1
+    help: Total number of bytes received per topic per second
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=BytesOutPerSec, topic=(.+)>
+    name: kafka_topic_bytes_out_total
+    type: counter
+    labels:
+      topic: $1
+    help: Total number of bytes sent per topic per second
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=MessagesInPerSec, topic=(.+)>
+    name: kafka_topic_messages_in_total
+    type: counter
+    labels:
+      topic: $1
+    help: Total number of messages produced per topic per second
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=FailedFetchRequestsPerSec, topic=(.+)>
+    name: kafka_topic_failed_fetch_requests_total
+    type: counter
+    labels:
+      topic: $1
+    help: Total number of failed fetch requests per topic
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=FailedProduceRequestsPerSec, topic=(.+)>
+    name: kafka_topic_failed_produce_requests_total
+    type: counter
+    labels:
+      topic: $1
+    help: Total number of failed produce requests per topic
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=TotalFetchRequestsPerSec, topic=(.+)>
+    name: kafka_topic_fetch_requests_total
+    type: counter
+    labels:
+      topic: $1
+    help: Total number of fetch requests per topic
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=TotalProduceRequestsPerSec, topic=(.+)>
+    name: kafka_topic_produce_requests_total
+    type: counter
+    labels:
+      topic: $1
+    help: Total number of produce requests per topic
+
+  #
+  # ────────────────────────────────────────────────
+  # 🚀 Producer Metrics
+  # ────────────────────────────────────────────────
+  #
+  - pattern: kafka.producer<type=producer-metrics, client-id=(.+)>
+    name: kafka_producer_bytes_total
+    type: counter
+    labels:
+      client_id: $1
+    attrNameSnakeCase: true
+    help: Kafka producer metrics by client ID
+
+  - pattern: kafka.producer<type=producer-node-metrics, node-id=(.+), client-id=(.+)>
+    name: kafka_producer_node_bytes_total
+    type: counter
+    labels:
+      node_id: $1
+      client_id: $2
+    attrNameSnakeCase: true
+    help: Kafka producer bytes sent to each node
+
+  #
+  # ────────────────────────────────────────────────
+  # 📥 Consumer Metrics
+  # ────────────────────────────────────────────────
+  #
+  - pattern: kafka.consumer<type=consumer-fetch-manager-metrics, client-id=(.+)>
+    name: kafka_consumer_fetch_bytes_total
+    type: counter
+    labels:
+      client_id: $1
+    attrNameSnakeCase: true
+    help: Kafka consumer fetch bytes per client
+
+  - pattern: kafka.consumer<type=consumer-fetch-manager-metrics, topic=(.+), client-id=(.+)>
+    name: kafka_consumer_fetch_bytes_by_topic_total
+    type: counter
+    labels:
+      topic: $1
+      client_id: $2
+    attrNameSnakeCase: true
+    help: Kafka consumer fetch bytes per topic and client
+
+  - pattern: kafka.consumer<type=consumer-coordinator-metrics, client-id=(.+)>
+    name: kafka_consumer_commit_latency_seconds
+    type: gauge
+    labels:
+      client_id: $1
+    attrNameSnakeCase: true
+    help: Kafka consumer commit latency metrics
+
+  #
+  # ────────────────────────────────────────────────
+  # ⏱️ Request Latency
+  # ────────────────────────────────────────────────
+  #
+  - pattern: kafka.network<type=RequestMetrics, name=TotalTimeMs, request=(.+)>
+    name: kafka_request_latency_milliseconds
+    type: histogram
+    labels:
+      request: $1
+    help: Total time in milliseconds for Kafka requests by request type

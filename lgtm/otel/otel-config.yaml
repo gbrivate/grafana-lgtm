@@ -1,0 +1,373 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
+  prometheus/collector:
+    config:
+      scrape_configs:
+        - job_name: "opentelemetry-collector"
+          scrape_interval: 5s
+          static_configs:
+            - targets: ["127.0.0.1:8888"]
+
+        # Scrape K8s pods with prometheus annotations
+        - job_name: "kubernetes-pods"
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            # Only scrape pods with prometheus.io/scrape annotation
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
+            # Use custom scrape path if specified
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            # Use custom port if specified
+            - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+              action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+              target_label: __address__
+            # Add pod metadata as labels
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: kubernetes_namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              target_label: kubernetes_pod_name
+
+  # K8s cluster metrics receiver
+  k8s_cluster:
+    auth_type: serviceAccount
+    node_conditions_to_report: [Ready, MemoryPressure, DiskPressure, PIDPressure, NetworkUnavailable]
+    allocatable_types_to_report: [cpu, memory, storage, ephemeral-storage]
+    metrics:
+      k8s.container.cpu_request:
+        enabled: true
+      k8s.container.memory_request:
+        enabled: true
+      k8s.container.cpu_limit:
+        enabled: true
+      k8s.container.memory_limit:
+        enabled: true
+      k8s.pod.phase:
+        enabled: true
+      k8s.deployment.available:
+        enabled: true
+      k8s.deployment.desired:
+        enabled: true
+
+  # K8s events receiver for cluster events
+  k8s_events:
+    auth_type: serviceAccount
+
+  # Kubelet stats receiver for node and pod metrics
+  kubeletstats:
+    auth_type: serviceAccount
+    collection_interval: 30s
+    endpoint: "${env:K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+    metric_groups:
+      - node
+      - pod
+      - container
+      - volume
+
+  # File log receiver for container logs
+  filelog:
+    include:
+      - /var/log/pods/*/*/*.log
+    exclude:
+      # Exclude collector's own logs to prevent loop
+      - /var/log/pods/*/otc-container/*.log
+    start_at: end
+    include_file_path: true
+    include_file_name: false
+    operators:
+      # Parse CRI-O / containerd format
+      - type: regex_parser
+        id: parser-crio
+        regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+
+      # Try to parse JSON logs
+      - type: json_parser
+        id: parser-json
+        parse_from: attributes.log
+        if: 'attributes.log != nil'
+
+      # Extract K8s metadata from file path
+      - type: regex_parser
+        id: extract-metadata-from-filepath
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
+        parse_from: attributes["log.file.path"]
+        if: 'attributes["log.file.path"] != nil'
+
+      # Move extracted metadata to resource attributes
+      - type: move
+        from: attributes.namespace
+        to: resource["k8s.namespace.name"]
+      - type: move
+        from: attributes.pod_name
+        to: resource["k8s.pod.name"]
+      - type: move
+        from: attributes.container_name
+        to: resource["k8s.container.name"]
+      - type: move
+        from: attributes.uid
+        to: resource["k8s.pod.uid"]
+
+  # Host metrics receiver for node-level metrics
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      disk:
+      filesystem:
+      load:
+      memory:
+      network:
+      paging:
+      processes:
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: "/ready"
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Memory limiter to prevent OOM
+  memory_limiter:
+    check_interval: 2s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+  # K8s attributes processor to enrich with K8s metadata
+  k8sattributes:
+    auth_type: serviceAccount
+    passthrough: false
+    filter:
+      node_from_env_var: K8S_NODE_NAME
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.deployment.name
+        - k8s.statefulset.name
+        - k8s.daemonset.name
+        - k8s.replicaset.name
+        - k8s.cronjob.name
+        - k8s.job.name
+        - k8s.node.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.pod.start_time
+      labels:
+        - tag_name: app.label.component
+          key: app.kubernetes.io/component
+          from: pod
+      annotations:
+        - tag_name: app.annotation.version
+          key: app.kubernetes.io/version
+          from: pod
+    pod_association:
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+      - sources:
+          - from: connection
+
+  # Resource detection processor
+  resourcedetection:
+    detectors: [env, system, docker, kubernetes]
+    timeout: 5s
+    override: false
+
+  # Resource processor to add custom attributes
+  resource:
+    attributes:
+      - key: service.instance.id
+        from_attribute: k8s.pod.uid
+        action: upsert
+      - key: k8s.cluster.name
+        value: "${env:K8S_CLUSTER_NAME}"
+        action: insert
+
+  # Transform processor for log severity mapping
+  transform/logs:
+    log_statements:
+      - context: log
+        statements:
+          # Map common severity strings to OpenTelemetry severity levels
+          - set(severity_text, attributes["level"]) where attributes["level"] != nil
+          - set(severity_text, attributes["severity"]) where attributes["severity"] != nil
+          - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "info" or severity_text == "INFO"
+          - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text == "warn" or severity_text == "WARN" or severity_text == "warning"
+          - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_text == "error" or severity_text == "ERROR"
+          - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "debug" or severity_text == "DEBUG"
+
+  # Attributes processor to clean up and standardize attributes
+  attributes/cleanup:
+    actions:
+      - key: log.file.path
+        action: delete
+      - key: logtag
+        action: delete
+
+exporters:
+  otlphttp/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+
+  # Traces to Tempo/Jaeger
+  otlphttp/traces:
+    endpoint: http://127.0.0.1:4418
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+
+  # Logs to Loki
+  otlphttp/logs:
+    endpoint: http://127.0.0.1:3100/otlp
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+
+  # Profiles to Pyroscope
+  otlp/profiles:
+    endpoint: http://127.0.0.1:4040
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+
+  # Debug exporters (commented out for production)
+  # debug/metrics:
+  #   verbosity: detailed
+  #   sampling_initial: 5
+  #   sampling_thereafter: 200
+  # debug/traces:
+  #   verbosity: detailed
+  #   sampling_initial: 5
+  #   sampling_thereafter: 200
+  # debug/logs:
+  #   verbosity: detailed
+  #   sampling_initial: 5
+  #   sampling_thereafter: 200
+
+service:
+  extensions: [health_check, pprof, zpages]
+
+  # Telemetry configuration for the collector itself
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888
+      level: detailed
+
+  pipelines:
+    # Traces pipeline
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
+      exporters: [otlphttp/traces]
+
+    # Metrics pipeline - Application metrics
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
+      exporters: [otlphttp/metrics]
+
+    # Metrics pipeline - Prometheus scraping
+    metrics/prometheus:
+      receivers: [prometheus/collector]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [otlphttp/metrics]
+
+    # Metrics pipeline - K8s cluster metrics
+    metrics/k8s_cluster:
+      receivers: [k8s_cluster]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [otlphttp/metrics]
+
+    # Metrics pipeline - Kubelet stats
+    metrics/kubeletstats:
+      receivers: [kubeletstats]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
+      exporters: [otlphttp/metrics]
+
+    # Metrics pipeline - Host metrics
+    metrics/hostmetrics:
+      receivers: [hostmetrics]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [otlphttp/metrics]
+
+    # Logs pipeline - Application logs
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource, transform/logs, batch]
+      exporters: [otlphttp/logs]
+
+    # Logs pipeline - Container logs from files
+    logs/files:
+      receivers: [filelog]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource, transform/logs, attributes/cleanup, batch]
+      exporters: [otlphttp/logs]
+
+    # Logs pipeline - K8s events
+    logs/k8s_events:
+      receivers: [k8s_events]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [otlphttp/logs]
+
+    # Profiles pipeline
+    profiles:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource]
+      exporters: [otlp/profiles]

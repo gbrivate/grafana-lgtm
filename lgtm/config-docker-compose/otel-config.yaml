@@ -1,0 +1,34 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+
+exporters:
+  debug:
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+  prometheusremotewrite:
+    endpoint: http://mimir:9009/api/v1/push
+  otlphttp:
+    endpoint: http://tempo:3200
+
+processors:
+  batch: {}
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [loki]
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheusremotewrite]
+
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp]

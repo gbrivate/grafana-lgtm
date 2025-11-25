@@ -1,0 +1,123 @@
+image:
+  repository: otel/opentelemetry-collector-contrib
+  tag: 0.139.0
+  pullPolicy: IfNotPresent
+
+mode: daemonset
+
+presets:
+  logsCollection:
+    enabled: true
+  kubeletMetrics:
+    enabled: true
+  # Disable the preset so we can manually configure k8sattributes below
+  kubernetesAttributes:
+    enabled: false
+
+config:
+  exporters:
+    otlp:
+      endpoint: "grafana-service.lgtm.svc.cluster.local:4317"
+      tls:
+        insecure: true
+
+    otlphttp:
+      endpoint: "http://grafana-service.lgtm.svc.cluster.local:4318"
+      tls:
+        insecure: true
+
+    prometheusremotewrite/prometheus:
+      endpoint: "http://grafana-service.lgtm.svc.cluster.local:9090/api/v1/write"
+      # Safety net: Convert any remaining resource attributes to labels
+      resource_to_telemetry_conversion:
+        enabled: true
+
+  receivers:
+    # FIXED: "extra_metadata_labels" removed completely to stop the crash.
+    kubeletstats:
+      collection_interval: 10s
+      auth_type: "serviceAccount"
+      endpoint: "https://${K8S_NODE_IP}:10250"
+      insecure_skip_verify: true
+
+  processors:
+    # 1. ENRICHMENT: Get the K8s Metadata (Pod, Namespace, Deployment)
+    k8sattributes:
+      auth_type: "serviceAccount"
+      passthrough: false
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.namespace.name
+          - k8s.node.name
+          - k8s.daemonset.name
+          - k8s.statefulset.name
+      # Associate IP/UID to find the correct metadata
+      pod_association:
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.ip
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.uid
+        - sources:
+            - from: connection
+
+    # 2. BEAUTIFICATION: Rename and Flatten attributes
+    transform:
+      error_mode: ignore
+      metric_statements:
+        - context: datapoint
+          statements:
+            # FIXED: Uses 'datapoint.attributes' (v0.139+ requirement)
+
+            # Namespace
+            - set(datapoint.attributes["namespace"], resource.attributes["k8s.namespace.name"])
+
+            # Pod Name
+            - set(datapoint.attributes["pod"], resource.attributes["k8s.pod.name"])
+
+            # Deployment Name
+            - set(datapoint.attributes["deployment"], resource.attributes["k8s.deployment.name"])
+
+            # Set instance to Pod Name (Cleaner than GUID)
+            - set(datapoint.attributes["instance"], resource.attributes["k8s.pod.name"])
+
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 25
+
+    batch: {}
+
+  service:
+    pipelines:
+      logs:
+        receivers: [otlp, filelog]
+        # Added transform here so your Loki logs also get the pretty labels
+        processors: [memory_limiter, k8sattributes, transform, batch]
+        exporters: [otlphttp]
+
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [otlp]
+
+      metrics:
+        receivers: [otlp, kubeletstats]
+        # Order: Enrich (k8sattributes) -> Rename (transform) -> Batch
+        processors: [memory_limiter, k8sattributes, transform, batch]
+        exporters: [prometheusremotewrite/prometheus]
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["nodes", "nodes/stats", "nodes/proxy", "pods", "namespaces", "services", "endpoints"]
+      verbs: ["get", "watch", "list"]
+    # Required for extracting "k8s.deployment.name"
+    - apiGroups: ["apps"]
+      resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
+      verbs: ["get", "watch", "list"]

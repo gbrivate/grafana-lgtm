@@ -1,0 +1,72 @@
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9096
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "127.0.0.1:4417"
+        http:
+          endpoint: "127.0.0.1:4418"
+
+ingester:
+  trace_idle_period: 500ms          # ↓ Wait less before flushing spans
+  max_block_duration: 2s            # ↓ Short blocks for faster ingestion
+  flush_check_period: 500ms         # ↓ Check more frequently
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    min_ready_duration: 1s
+
+memberlist:
+  bind_addr: [127.0.0.1]
+  bind_port: 7947
+
+querier:
+  frontend_worker:
+    frontend_address: 127.0.0.1:9096
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /data/tempo/wal
+      flush_check_period: 500ms
+    local:
+      path: /data/tempo/blocks
+      blocklist_poll: 2s
+
+metrics_generator:
+  processor:
+    service_graphs:
+      wait: 1s                     # ↓ Shorten service graph build interval
+      max_items: 1000
+    local_blocks:
+      filter_server_spans: false
+    span_metrics:
+      dimensions:
+        - service_name
+        - operation
+        - status_code
+
+  traces_storage:
+    path: /data/tempo/generator/traces
+
+  storage:
+    path: /data/tempo/generator/wal
+    remote_write:
+      - url: http://127.0.0.1:9090/api/v1/write
+        send_exemplars: true
+        queue_config:
+          max_samples_per_send: 1000
+          batch_send_deadline: 1s   # ↓ Flush metrics every second
+          min_backoff: 200ms
+          max_backoff: 1s
+
+overrides:
+  metrics_generator_processors: [service-graphs, local-blocks, span-metrics]

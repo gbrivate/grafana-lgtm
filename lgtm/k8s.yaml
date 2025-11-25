@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-deployment
+  namespace: lgtm
+  labels:
+    app: lgtm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lgtm
+  template:
+    metadata:
+      labels:
+        app: lgtm
+    spec:
+      containers:
+        - name: lgtm
+          image: lgtm:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000  # Grafana UI
+              name: grafana
+            - containerPort: 4318  # OTLP HTTP
+              name: otlp-http
+            - containerPort: 4317  # OTLP gRPC
+              name: otlp-grpc
+            - containerPort: 9090  # Prometheus endpoint
+              name: prometheus
+          resources:
+            requests:
+              memory: 1024Mi
+              cpu: 500m
+            limits:
+              memory: 2048Mi
+              cpu: 1000m
+          env:
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: K8S_CLUSTER_NAME
+              value: "kind"  # Set your cluster name
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: lgtm
+spec:
+  selector:
+    app: lgtm
+  ports:
+    - name: grafana
+      port: 3000
+      targetPort: 3000
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: prometheus
+      port: 9090
+      targetPort: 9090

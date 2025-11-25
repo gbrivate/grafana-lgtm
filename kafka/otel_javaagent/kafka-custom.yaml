@@ -1,0 +1,337 @@
+# kafka-custom.yaml
+# OpenTelemetry Javaagent JMX mapping with Prometheus-style metric names (hybrid)
+rules:
+
+  ################################################################
+  # Broker metrics - topic level
+  ################################################################
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec,topic=*"
+    metricAttribute:
+      topic: param(topic)
+    mapping:
+      Count:
+        metric: kafka_topic_bytes_in_total
+        type: counter
+        desc: Total number of bytes received per topic per second
+        unit: "By"
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec,topic=*"
+    metricAttribute:
+      topic: param(topic)
+    mapping:
+      Count:
+        metric: kafka_topic_bytes_out_total
+        type: counter
+        desc: Total number of bytes sent per topic per second
+        unit: "By"
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec,topic=*"
+    metricAttribute:
+      topic: param(topic)
+    mapping:
+      Count:
+        metric: kafka_topic_messages_in_total
+        type: counter
+        desc: Total messages in per topic per second
+        unit: "1"
+
+  ################################################################
+  # Broker request metrics (fetch/produce, failures, times)
+  ################################################################
+
+  - beans:
+      - "kafka.server:type=BrokerTopicMetrics,name=TotalFetchRequestsPerSec"
+      - "kafka.server:type=BrokerTopicMetrics,name=TotalProduceRequestsPerSec"
+    metricAttribute:
+      type: const(request)
+    mapping:
+      Count:
+        metric: kafka_request_count
+        type: counter
+        desc: The number of requests received by the broker
+        unit: "1"
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=FailedFetchRequestsPerSec"
+    metricAttribute:
+      type: const(fetch)
+    mapping:
+      Count:
+        metric: kafka_request_failed_total
+        type: counter
+        desc: The number of failed fetch requests
+        unit: "1"
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=FailedProduceRequestsPerSec"
+    metricAttribute:
+      type: const(produce)
+    mapping:
+      Count:
+        metric: kafka_request_failed_total
+        type: counter
+        desc: The number of failed produce requests
+        unit: "1"
+
+  - beans:
+      - "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce"
+      - "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchConsumer"
+      - "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchFollower"
+    metricAttribute:
+      request: param(request)
+    unit: "ms"
+    mapping:
+      Count:
+        metric: kafka_request_time_total_ms
+        type: counter
+        desc: Total request time (ms)
+        unit: "ms"
+      50thPercentile:
+        metric: kafka_request_time_50p_ms
+        type: gauge
+        desc: 50th percentile request time (ms)
+        unit: "ms"
+      99thPercentile:
+        metric: kafka_request_time_99p_ms
+        type: gauge
+        desc: 99th percentile request time (ms)
+        unit: "ms"
+
+  - bean: "kafka.network:type=RequestChannel,name=RequestQueueSize"
+    mapping:
+      Value:
+        metric: kafka_request_queue
+        type: updowncounter
+        desc: Size of the request queue
+        unit: "1"
+
+  ################################################################
+  # Network I/O aggregated (in/out)
+  ################################################################
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec"
+    metricAttribute:
+      direction: const(in)
+    mapping:
+      Count:
+        metric: kafka_network_io_bytes_total
+        type: counter
+        desc: Bytes received by the broker
+        unit: "By"
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec"
+    metricAttribute:
+      direction: const(out)
+    mapping:
+      Count:
+        metric: kafka_network_io_bytes_total
+        type: counter
+        desc: Bytes sent by the broker
+        unit: "By"
+
+  ################################################################
+  # Purgatory (produce/fetch) wait queues
+  ################################################################
+
+  - beans:
+      - "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Produce"
+      - "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Fetch"
+    metricAttribute:
+      delayedOperation: param(delayedOperation)
+    mapping:
+      Value:
+        metric: kafka_purgatory_size
+        type: updowncounter
+        desc: Number of requests waiting in purgatory
+        unit: "1"
+
+  ################################################################
+  # Replica & partition metrics
+  ################################################################
+
+  - bean: "kafka.server:type=ReplicaManager,name=PartitionCount"
+    mapping:
+      Value:
+        metric: kafka_partition_count
+        type: updowncounter
+        desc: Number of partitions on the broker
+        unit: "1"
+
+  - bean: "kafka.controller:type=KafkaController,name=OfflinePartitionsCount"
+    mapping:
+      Value:
+        metric: kafka_partition_offline
+        type: updowncounter
+        desc: The number of offline partitions
+        unit: "1"
+
+  - bean: "kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions"
+    mapping:
+      Value:
+        metric: kafka_partition_under_replicated
+        type: updowncounter
+        desc: The number of under-replicated partitions
+        unit: "1"
+
+  - bean: "kafka.server:type=ReplicaFetcherManager,name=MaxLag,clientId=Replica"
+    mapping:
+      Value:
+        metric: kafka_lag_max
+        desc: The maximum lag in messages between follower and leader replicas
+        unit: "1"
+
+  ################################################################
+  # ISR operations (shrinks/expands)
+  ################################################################
+
+  - bean: "kafka.server:type=ReplicaManager,name=IsrShrinksPerSec"
+    metricAttribute:
+      operation: const(shrink)
+    mapping:
+      Count:
+        metric: kafka_isr_operation_count
+        type: updowncounter
+        desc: ISR shrink/expand operations (shrink)
+        unit: "1"
+
+  - bean: "kafka.server:type=ReplicaManager,name=IsrExpandsPerSec"
+    metricAttribute:
+      operation: const(expand)
+    mapping:
+      Count:
+        metric: kafka_isr_operation_count
+        type: updowncounter
+        desc: ISR shrink/expand operations (expand)
+        unit: "1"
+
+  ################################################################
+  # Replica/controller metrics
+  ################################################################
+
+  - bean: "kafka.controller:type=KafkaController,name=ActiveControllerCount"
+    mapping:
+      Value:
+        metric: kafka_controller_active_count
+        type: updowncounter
+        desc: Active controller count
+        unit: "1"
+
+  - bean: "kafka.controller:type=ControllerStats,name=LeaderElectionRateAndTimeMs"
+    mapping:
+      Count:
+        metric: kafka_controller_leader_election_total
+        type: counter
+        desc: Leader election count
+        unit: "1"
+
+  - bean: "kafka.controller:type=ControllerStats,name=UncleanLeaderElectionsPerSec"
+    mapping:
+      Count:
+        metric: kafka_controller_leader_election_unclean_total
+        type: counter
+        desc: Unclean leader election count
+        unit: "1"
+
+  ################################################################
+  # Log metrics
+  ################################################################
+
+  - bean: "kafka.log:type=LogFlushStats,name=LogFlushRateAndTimeMs"
+    unit: "ms"
+    mapping:
+      Count:
+        metric: kafka_log_flush_count_total
+        type: counter
+        desc: Log flush count
+        unit: "1"
+      50thPercentile:
+        metric: kafka_log_flush_time_50p_ms
+        type: gauge
+        desc: Log flush time 50th percentile
+        unit: "ms"
+      99thPercentile:
+        metric: kafka_log_flush_time_99p_ms
+        type: gauge
+        desc: Log flush time 99th percentile
+        unit: "ms"
+
+  - bean: "kafka.log:type=Log,name=LogEndOffset,topic=*,partition=*"
+    metricAttribute:
+      topic: param(topic)
+      partition: param(partition)
+    mapping:
+      Value:
+        metric: kafka_log_end_offset
+        type: gauge
+        desc: Log end offset by topic and partition
+        unit: "1"
+
+  ################################################################
+  # Producer metrics (client-level & topic-level)
+  ################################################################
+
+  - bean: "kafka.producer:type=producer-metrics,client-id=*"
+    metricAttribute:
+      client_id: param(client-id)
+    mapping:
+      record-send-rate:
+        metric: kafka_producer_record_send_rate
+        type: gauge
+        desc: Producer record send rate
+        unit: "1"
+      record-send-total:
+        metric: kafka_producer_record_send_total
+        type: counter
+        desc: Producer record send total
+        unit: "1"
+
+  - bean: "kafka.producer:type=producer-topic-metrics,client-id=*,topic=*"
+    metricAttribute:
+      client_id: param(client-id)
+      topic: param(topic)
+    mapping:
+      record-send-rate:
+        metric: kafka_producer_topic_record_send_rate
+        type: gauge
+        desc: Producer topic record send rate
+        unit: "1"
+      byte-rate:
+        metric: kafka_producer_topic_byte_rate
+        type: gauge
+        desc: Producer topic byte rate
+        unit: "By"
+
+  ################################################################
+  # Consumer metrics (fetch manager & coordinator)
+  ################################################################
+
+  - bean: "kafka.consumer:type=consumer-fetch-manager-metrics,client-id=*,topic=*,partition=*"
+    metricAttribute:
+      client_id: param(client-id)
+      topic: param(topic)
+      partition: param(partition)
+    mapping:
+      records-lag:
+        metric: kafka_consumer_records_lag
+        type: gauge
+        desc: Consumer records lag by partition
+        unit: "1"
+      records-lag-max:
+        metric: kafka_consumer_records_lag_max
+        type: gauge
+        desc: Consumer records lag max
+        unit: "1"
+
+  - bean: "kafka.consumer:type=consumer-coordinator-metrics,client-id=*"
+    metricAttribute:
+      client_id: param(client-id)
+    mapping:
+      commit-latency-avg:
+        metric: kafka_consumer_commit_latency_avg
+        type: gauge
+        desc: Consumer commit latency average
+        unit: "ms"
+      commit-rate:
+        metric: kafka_consumer_commit_rate
+        type: gauge
+        desc: Consumer commit rate
+        unit: "1"

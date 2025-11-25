@@ -1,0 +1,16 @@
+multitenancy_enabled: false
+
+server:
+  http_listen_port: 9009
+
+ingester:
+  ring:
+    replication_factor: 1
+
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/blocks
+
+compactor:
+  working_directory: /tmp/mimir/compactor
