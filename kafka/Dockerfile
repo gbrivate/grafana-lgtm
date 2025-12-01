@@ -1,4 +1,3 @@
-# Dockerfile
 FROM apache/kafka:latest
 
 # -------------------------------
@@ -21,21 +20,34 @@ ENV TZ=America/Sao_Paulo \
     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
 
 # -------------------------------
-# Set Kafka JVM options with OTel config
+# Expose JMX so OTEL / Prometheus can scrape via JMX Exporter
+# -------------------------------
+ENV KAFKA_JMX_OPTS="-Dcom.sun.management.jmxremote \
+    -Dcom.sun.management.jmxremote.authenticate=false \
+    -Dcom.sun.management.jmxremote.ssl=false \
+    -Dcom.sun.management.jmxremote.local.only=false \
+    -Djava.rmi.server.hostname=0.0.0.0" \
+    KAFKA_JMX_PORT=9999
+
+# -------------------------------
+# Set Kafka JVM options with OTel javaagent and flags
+# Put all JVM flags on one line (safer for Docker ENV)
 # -------------------------------
 ENV KAFKA_OPTS="-javaagent:/opt/opentelemetry-javaagent.jar \
-      -Dotel.instrumentation.jmx.enabled=true \
-      -Dotel.jmx.target.system=kafka-broker \
-      -Dotel.jmx.config=/opt/kafka-custom.yaml \
-      -Dotel.resource.attributes=service.name=kafka \
-      -Dotel.exporter.otlp.endpoint=http://grafana-service.lgtm.svc.cluster.local:4318 \
-      -Dotel.exporter.otlp.protocol=http/protobuf \
-      -Dotel.metrics.exporter=otlp \
-      -Dotel.traces.exporter=otlp \
-      -Dotel.logs.exporter=otlp \
-      -Dotel.metric.export.interval=5000 \
-      -Dotel.javaagent.debug=true"
+-Dotel.instrumentation.jmx.enabled=true \
+-Dotel.jmx.target.system=kafka-broker \
+-Dotel.jmx.config=/opt/kafka-custom.yaml \
+-Dotel.resource.attributes=service.name=kafka \
+-Dotel.exporter.otlp.endpoint=http://grafana-service.lgtm.svc.cluster.local:4318 \
+-Dotel.exporter.otlp.protocol=http/protobuf \
+-Dotel.metrics.exporter=otlp \
+-Dotel.traces.exporter=otlp \
+-Dotel.logs.exporter=otlp \
+-Dotel.metrics.export.interval=5000 \
+-Dotel.javaagent.debug=true"
 
-
-
+# Heap settings
 ENV KAFKA_HEAP_OPTS="-Xms1g -Xmx1g"
+
+# Note: the base apache/kafka image already defines entrypoint/cmd
+# If you need to override or add custom start commands, do that in Compose or an entrypoint script.

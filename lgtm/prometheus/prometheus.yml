@@ -36,6 +36,13 @@ scrape_configs:
       - action: labeldrop
         regex: 'instance|job'
 
+  - job_name: "kube-state-metrics"
+    honor_labels: true
+    metrics_path: /metrics
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ "ksm-kube-state-metrics.kube-system.svc.cluster.local:8080" ]
+
 query:
   lookback_delta: 5m
-  max_concurrent: 64
+  max_concurrent: 100

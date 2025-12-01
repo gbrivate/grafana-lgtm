@@ -6,6 +6,8 @@ FROM grafana/otel-lgtm:latest
 COPY prometheus/prometheus.yml /otel-lgtm/prometheus/prometheus.yml
 #COPY prometheus/prometheus.yaml /otel-lgtm/prometheus.yaml
 COPY otel/otel-config.yaml /otel-lgtm/otel-config.yaml
+#COPY otel/otelcol-config-export-http.yaml /otel-lgtm/otelcol-config-export-http.yaml
+
 #COPY loki/loki-config.yaml /otel-lgtm/loki-config.yaml
 #COPY tempo/tempo-config.yaml /otel-lgtm/tempo-config.yaml
 

@@ -52,3 +52,14 @@ helm upgrade --install otel-cluster open-telemetry/opentelemetry-collector -f va
 kubectl get pods -l app.kubernetes.io/name=opentelemkuetry-collector -n opentelemetry -w
 
 kubectl rollout restart -n opentelemetry deployment 
+
+
+## Instalar kube-state-metrics via Helm (RECOMENDADO)
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# Instalar kube-state-metrics
+
+helm install ksm prometheus-community/kube-state-metrics \
+--namespace kube-system \
+--create-namespace

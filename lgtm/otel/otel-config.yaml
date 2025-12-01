@@ -16,6 +16,23 @@ receivers:
           static_configs:
             - targets: ["127.0.0.1:8888"]
 
+        - job_name: "kube-state-metrics"
+          scrape_interval: 5s
+          scrape_timeout: 10s
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["ksm-kube-state-metrics.kube-system.svc.cluster.local:8080"]
+          kubernetes_sd_configs:
+            - role: service
+            # Filter to find only the kube-state-metrics service
+          relabel_configs:
+            - source_labels: [ __meta_kubernetes_service_label_app_kubernetes_io_name ]
+              action: keep
+              regex: kube-state-metrics
+            - source_labels: [ __meta_kubernetes_service_port_name ]
+              action: keep
+              regex: http-metrics|http # Matches common port names for KSM
+
         # Scrape K8s pods with prometheus annotations
         - job_name: "kubernetes-pods"
           kubernetes_sd_configs:
@@ -234,6 +251,20 @@ processors:
         action: delete
 
 exporters:
+  prometheusremotewrite:
+    endpoint: http://127.0.0.1:9090/api/v1/write
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+
   otlphttp/metrics:
     endpoint: http://127.0.0.1:9090/api/v1/otlp
     tls:
@@ -322,25 +353,25 @@ service:
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
-      exporters: [otlphttp/metrics]
+      exporters: [otlphttp/metrics, prometheusremotewrite]
 
     # Metrics pipeline - Prometheus scraping
     metrics/prometheus:
       receivers: [prometheus/collector]
       processors: [memory_limiter, resourcedetection, resource, batch]
-      exporters: [otlphttp/metrics]
+      exporters: [otlphttp/metrics, prometheusremotewrite]
 
     # Metrics pipeline - K8s cluster metrics
     metrics/k8s_cluster:
       receivers: [k8s_cluster]
       processors: [memory_limiter, resourcedetection, resource, batch]
-      exporters: [otlphttp/metrics]
+      exporters: [otlphttp/metrics, prometheusremotewrite]
 
     # Metrics pipeline - Kubelet stats
     metrics/kubeletstats:
       receivers: [kubeletstats]
       processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
-      exporters: [otlphttp/metrics]
+      exporters: [otlphttp/metrics, prometheusremotewrite]
 
     # Metrics pipeline - Host metrics
     metrics/hostmetrics:
