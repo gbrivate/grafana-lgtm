@@ -17,7 +17,9 @@ ENV TZ=America/Sao_Paulo \
     KAFKA_CONTROLLER_LISTENER_NAMES="CONTROLLER" \
     KAFKA_LOG_DIRS="/tmp/kraft-combined-logs" \
     CLUSTER_ID="MkU3OEVBNTcwNTJENDM2Qk" \
-    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+    KAFKA_PRODUCER_BYTE_RATE="10000" \
+    KAFKA_CONSUMER_BYTE_RATE="10000"
 
 # -------------------------------
 # Expose JMX so OTEL / Prometheus can scrape via JMX Exporter
@@ -34,17 +36,20 @@ ENV KAFKA_JMX_OPTS="-Dcom.sun.management.jmxremote \
 # Put all JVM flags on one line (safer for Docker ENV)
 # -------------------------------
 ENV KAFKA_OPTS="-javaagent:/opt/opentelemetry-javaagent.jar \
--Dotel.instrumentation.jmx.enabled=true \
--Dotel.jmx.target.system=kafka-broker \
--Dotel.jmx.config=/opt/kafka-custom.yaml \
--Dotel.resource.attributes=service.name=kafka \
--Dotel.exporter.otlp.endpoint=http://grafana-service.lgtm.svc.cluster.local:4318 \
--Dotel.exporter.otlp.protocol=http/protobuf \
--Dotel.metrics.exporter=otlp \
--Dotel.traces.exporter=otlp \
--Dotel.logs.exporter=otlp \
--Dotel.metrics.export.interval=5000 \
--Dotel.javaagent.debug=true"
+      -Dotel.instrumentation.jmx.enabled=true \
+      -Dotel.jmx.target.system=kafka-broker \
+      -Dotel.jmx.config=/opt/kafka-custom.yaml \
+      -Dotel.resource.attributes=service.name=kafka \
+      -Dotel.exporter.otlp.endpoint=http://grafana-service.lgtm.svc.cluster.local:4318 \
+      -Dotel.exporter.otlp.protocol=http/protobuf \
+      -Dotel.metrics.exporter=otlp \
+      -Dotel.traces.exporter=otlp \
+      -Dotel.logs.exporter=otlp \
+      -Dotel.metric.export.interval=5000 \
+      -Dotel.javaagent.debug=true \
+      -Dotel.instrumentation.kafka-metrics.enabled=true"
+
+
 
 # Heap settings
 ENV KAFKA_HEAP_OPTS="-Xms1g -Xmx1g"

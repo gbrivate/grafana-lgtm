@@ -335,3 +335,43 @@ rules:
         type: gauge
         desc: Consumer commit rate
         unit: "1"
+
+  - beans:
+      - "kafka.network:type=RequestChannel,name=ThrottleTimeMs,request=Produce"
+      - "kafka.network:type=RequestChannel,name=ThrottleTimeMs,request=Fetch"
+    metricAttribute:
+      request: param(request)
+    unit: "ms"
+    mapping:
+      Count:
+        metric: kafka_throttle_time_ms_total
+        type: counter
+        desc: Total throttle time (ms) per request
+        unit: "ms"
+      Mean:
+        metric: kafka_throttle_time_ms_avg
+        type: gauge
+        desc: Average throttle time (ms)
+        unit: "ms"
+      50thPercentile:
+        metric: kafka_throttle_time_ms_p50
+        type: gauge
+        desc: 50th percentile throttle time
+        unit: "ms"
+      99thPercentile:
+        metric: kafka_throttle_time_ms_p99
+        type: gauge
+        desc: 99th percentile throttle time
+        unit: "ms"
+
+  - bean: "kafka.server:type=ClientQuotaManager,name=ThrottleTimeMs,client-id=*"
+    metricAttribute:
+      client_id: param(client-id)
+    mapping:
+      Count:
+        metric: kafka_client_quota_throttle_time_ms_total
+        type: counter
+        desc: Total throttle time applied to this client-id
+        unit: "ms"
+
+

@@ -11,7 +11,9 @@ docker build --tag corban-msc-kafka:latest .
 kind load docker-image corban-msc-kafka
 kubectl apply -f k8s.yaml
 
-
+docker build --tag corban-msc-kafka:latest .
+kind load docker-image corban-msc-kafka
+kubectl rollout restart deployment corban-msc-kafka-deployment -n corban
 kubectl logs deployments/corban-msc-kafka-deployment  -n corban
 
 
