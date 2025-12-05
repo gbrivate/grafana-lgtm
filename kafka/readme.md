@@ -1,4 +1,4 @@
-## Kafka
+# Kafka
 
 docker build --no-cache -t kafka-otel:latest .
 kind load docker-image kafka-otel:latest
@@ -28,3 +28,12 @@ receives → traces/logs from OTEL agent
 Grafana → visualization
 
 This is textbook production architecture.
+
+clear
+docker container stop kafka
+docker container remove kafka
+docker build --no-cache  --tag kafka:1.0 .
+docker run -p 8003:8003 \
+    --name kafka \
+    --network=mynet \
+    -t kafka:1.0

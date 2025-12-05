@@ -188,7 +188,7 @@ rules:
       operation: const(shrink)
     mapping:
       Count:
-        metric: kafka_isr_operation_count
+        metric: kafka_isr_operation_shrink_count
         type: updowncounter
         desc: ISR shrink/expand operations (shrink)
         unit: "1"
@@ -198,7 +198,7 @@ rules:
       operation: const(expand)
     mapping:
       Count:
-        metric: kafka_isr_operation_count
+        metric: kafka_isr_operation_expand_count
         type: updowncounter
         desc: ISR shrink/expand operations (expand)
         unit: "1"
@@ -336,17 +336,21 @@ rules:
         desc: Consumer commit rate
         unit: "1"
 
-  - beans:
-      - "kafka.network:type=RequestChannel,name=ThrottleTimeMs,request=Produce"
-      - "kafka.network:type=RequestChannel,name=ThrottleTimeMs,request=Fetch"
+  ################################################################
+  # Throttle metrics (Producer/Fetch Quotas) - FIX APPLIED HERE
+  ################################################################
+
+  - beans: # <-- FIXED: Changed 'bean' to 'beans' to support a list of MBeans
+      - "kafka.server:type=ProducerRequest,client-id=*,request=Produce,name=ThrottleTimeMs"
+      - "kafka.server:type=FetchRequest,client-id=*,request=Fetch,name=ThrottleTimeMs"
     metricAttribute:
       request: param(request)
-    unit: "ms"
+      client_id: param(client-id)
     mapping:
       Count:
-        metric: kafka_throttle_time_ms_total
+        metric: kafka_throttle_count_total
         type: counter
-        desc: Total throttle time (ms) per request
+        desc: Total number of throttle events
         unit: "ms"
       Mean:
         metric: kafka_throttle_time_ms_avg
@@ -363,15 +367,3 @@ rules:
         type: gauge
         desc: 99th percentile throttle time
         unit: "ms"
-
-  - bean: "kafka.server:type=ClientQuotaManager,name=ThrottleTimeMs,client-id=*"
-    metricAttribute:
-      client_id: param(client-id)
-    mapping:
-      Count:
-        metric: kafka_client_quota_throttle_time_ms_total
-        type: counter
-        desc: Total throttle time applied to this client-id
-        unit: "ms"
-
-

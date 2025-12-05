@@ -3,14 +3,14 @@ kubectl delete namespace lgtm
 
 kubectl create namespace lgtm
 
-docker build --no-cache --tag lgtm:latest .
-kind load docker-image lgtm:latest
+docker build --no-cache --tag lgtm:1.0 .
+kind load docker-image lgtm:1.0
 kubectl rollout restart -n lgtm deployment grafana-deployment
 kubectl port-forward -n lgtm svc/grafana-service 3000:3000 9090:9090
 
 kubectl create namespace lgtm
-docker build --no-cache --tag lgtm:latest .
-kind load docker-image lgtm:latest
+docker build --no-cache --tag lgtm:1.0 .
+kind load docker-image lgtm:1.0
 kubectl apply -f k8s.yaml
 kubectl port-forward -n lgtm svc/grafana-service 3000:3000 9090:9090
 
@@ -21,7 +21,16 @@ kubectl apply -f k8s.yaml
 kubectl logs -n lgtm deployments/grafana-deployment
 kubectl get pods -n lgt
 
-docker run -p 3000:3000 lgtm:latest
+
+clear
+docker container stop grafana
+docker container remove grafana
+docker image remove  lgtm:1.0
+docker build --no-cache --tag lgtm:1.0 .
+docker run -p 3000:3000 -p 4317:4317 -p 4318:4318 -p 4040:4040 -p 9090:9090  \
+    --name grafana \
+    --network=mynet \
+    lgtm:1.0
 
 ## Queires tempo
 

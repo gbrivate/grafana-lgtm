@@ -3,13 +3,16 @@ FROM grafana/otel-lgtm:latest
 # Optional: copy custom Grafana dashboards or configuration
 
 #COPY grafana/defaults.ini  /otel-lgtm/grafana/conf/defaults.ini
-COPY prometheus/prometheus.yml /otel-lgtm/prometheus/prometheus.yml
+#COPY prometheus/prometheus.yml /otel-lgtm/prometheus/prometheus.yml
 #COPY prometheus/prometheus.yaml /otel-lgtm/prometheus.yaml
-COPY otel/otel-config.yaml /otel-lgtm/otel-config.yaml
+# COPY otel/otel-config-postgres.yaml /otel-lgtm/otel-config.yaml
 #COPY otel/otelcol-config-export-http.yaml /otel-lgtm/otelcol-config-export-http.yaml
 
 #COPY loki/loki-config.yaml /otel-lgtm/loki-config.yaml
-#COPY tempo/tempo-config.yaml /otel-lgtm/tempo-config.yaml
+COPY tempo/tempo-config.yaml /otel-lgtm/tempo-config.yaml
+
+# ✔️ Overwrite the actual OTEL Collector config used by the container
+COPY otel/otelcol-config-postgres.yaml /otel-lgtm/otelcol-config.yaml
 
 # dashbords custom
 COPY grafana/grafana-dashboards.yaml /otel-lgtm/grafana/conf/provisioning/dashboards/grafana-dashboards.yaml
@@ -36,7 +39,14 @@ ENV TZ=America/Sao_Paulo \
     # --- Enable query caching in Grafana (v10+) ---
     GF_FEATURE_TOGGLES_ENABLE=queryCaching \
     GF_CACHING_ENABLED=true \
-    GF_CACHING_TTL=30s
+    GF_CACHING_TTL=30s \
+    GF_FEATURE_TOGGLES_ENABLE="tempoServiceGraphV2 tempoMessagingGraph" \
+    TEMPO_LOG_FORMAT=logfmt
 
+#ENABLE_LOGS_PROMETHEUS=true \
+#TEMPO_LOG_LEVEL=debug \
+#ENABLE_LOGS_TEMPO=true \
+#ENABLE_LOGS_OTELCOL=true \
+#OTEL_LOG_LEVEL=debug \
 
 EXPOSE 3000 4317 4318 9090

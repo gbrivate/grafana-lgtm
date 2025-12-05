@@ -1,17 +1,23 @@
 import asyncio
-
-from fastapi import FastAPI, Request, Query
+import httpx
+import logging
 from random import randint
 
+from fastapi import FastAPI, Request, Query
+from fastapi.responses import JSONResponse
 
-import logging
+from opentelemetry import metrics
 
+# ----------------------------------------------------
+# App + Logging
+# ----------------------------------------------------
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from opentelemetry import metrics
-
+# ----------------------------------------------------
+# Metrics (OTEL)
+# ----------------------------------------------------
 meter = metrics.get_meter("corban-msc-fastapi")
 request_counter = meter.create_counter(
     "app_requests_total",
@@ -24,10 +30,13 @@ async def count_requests(request, call_next):
     request_counter.add(1, {"method": request.method, "status_code": response.status_code})
     return response
 
-# --- Routes ---
+# ----------------------------------------------------
+# Routes
+# ----------------------------------------------------
+
 @app.get("/slow")
 async def slow():
-    await asyncio.sleep(5)  # Keeps the request "active" for 5s
+    await asyncio.sleep(5)
     return {"message": "done"}
 
 @app.get("/rolldice")
@@ -42,7 +51,7 @@ async def roll_dice(player: str | None = Query(default=None)):
 @app.get("/hello")
 async def hello(name: str):
     if name == "corban":
-        logger.error("Not ok: %s", name )
+        logger.error("Not ok: %s", name)
         return {"Not hello": name}
     logger.info("Hello: %s", name)
     return {"hello": name}
@@ -57,3 +66,19 @@ async def get_custom_error(code: int):
             "requested_status_code": code
         },
     )
+
+# ----------------------------------------------------
+# Call external endpoint
+# ----------------------------------------------------
+@app.get("/call-loop")
+async def call_loop(loop: int | None = Query(default=1)):
+    url = "http://java:8080/api/loop?id="+str(loop)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url,  timeout=httpx.Timeout(30.0))
+
+    return {
+        "called_url": url,
+        "remote_status": response.status_code,
+        "remote_response": response.text,
+    }

@@ -1,77 +1,12 @@
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-        cors:
-          allowed_origins:
-            - http://*
-  prometheus/collector:
-    config:
-      scrape_configs:
-        - job_name: "opentelemetry-collector"
-          scrape_interval: 1s
-          static_configs:
-            - targets: ["127.0.0.1:8888"]
-        - job_name: "kube-state-metrics"
-          scrape_interval: 5s
-          scrape_timeout: 10s
-          metrics_path: /metrics
-          static_configs:
-            - targets: ["ksm-kube-state-metrics.kube-system.svc.cluster.local:8080"]
-
-extensions:
-  health_check:
-    endpoint: 0.0.0.0:13133
-    path: "/ready"
-
-processors:
-  batch:
-
-exporters:
-  otlphttp/metrics:
-    endpoint: http://127.0.0.1:9090/api/v1/otlp
-    tls:
-      insecure: true
-  otlphttp/traces:
-    endpoint: http://127.0.0.1:4418
-    tls:
-      insecure: true
-  otlphttp/logs:
-    endpoint: http://127.0.0.1:3100/otlp
-    tls:
-      insecure: true
-  otlp/profiles:
-    endpoint: http://127.0.0.1:4040
-    tls:
-      insecure: true
-  debug/metrics:
-    verbosity: detailed
-  debug/traces:
-    verbosity: detailed
-  debug/logs:
-    verbosity: detailed
-
 service:
-  extensions: [health_check]
   pipelines:
     traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlphttp/traces]
-      #exporters: [otlphttp/traces,debug/traces]
+      exporters: [otlphttp/traces, otlphttp/external]
     metrics:
-      receivers: [otlp, prometheus/collector]
-      processors: [batch]
-      exporters: [otlphttp/metrics]
-      #exporters: [otlphttp/metrics,debug/metrics]
+      exporters: [otlphttp/metrics, otlphttp/external]
     logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlphttp/logs]
-      #exporters: [otlphttp/logs,debug/logs]
-    profiles:
-      receivers: [otlp]
-      exporters: [otlp/profiles]
+      exporters: [otlphttp/logs, otlphttp/external]
+
+exporters:
+  otlphttp/external:
+    endpoint: ${env:OTEL_EXPORTER_OTLP_ENDPOINT}

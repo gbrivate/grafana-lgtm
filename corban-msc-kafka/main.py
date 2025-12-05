@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger("corban-msc-kafka")
 LOG.info("API is starting up")
 
-KAFKA_BOOTSTRAP_SERVERS = "kafka-service.corban.svc.cluster.local:9092"
+KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 TOPIC_NAME = "test-topic"
 
 producer: AIOKafkaProducer | None = None
@@ -27,6 +27,10 @@ async def startup_event():
     global producer
     raw_producer = AIOKafkaProducer(
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        client_id="corban-msc-kafka",
+        acks="all",
+        linger_ms=5,
+        max_request_size=10_485_760,
         value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         key_serializer=lambda v: v.encode("utf-8") if v else None,
     )
@@ -47,16 +51,22 @@ async def shutdown_event():
 @app.post("/produce")
 async def produce_message(message: dict):
     global producer
+    LOG.info("Producer starting")
     if not producer:
         raise HTTPException(status_code=500, detail="Producer not initialized")
 
     try:
-        key = message.get("key", "default")
+        LOG.info("Getting keys")
+        key = message.get("key")
         value = message.get("value", "")
+        producer_key = str(key) if key is not None and key != "" else None
+        producer_value = {"value": value}
 
         # This call is instrumented automatically
-        await producer.send_and_wait(TOPIC_NAME, value={"value": value}, key=key)
+        LOG.info("Setting msg via producer")
+        await producer.send_and_wait(TOPIC_NAME, value=producer_value, key=producer_key)
 
+        LOG.info("Returnning status of producer")
         return {"status": "ok", "topic": TOPIC_NAME, "value": value}
 
     except Exception as e:

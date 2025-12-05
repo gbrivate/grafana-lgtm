@@ -13,4 +13,9 @@ opentelemetry-instrumentation-asyncio
 opentelemetry-instrumentation-aiohttp-client
 opentelemetry-instrumentation-aiokafka
 opentelemetry-instrumentation-requests
-
+opentelemetry-instrumentation-grpc
+opentelemetry-instrumentation-sqlalchemy
+opentelemetry-instrumentation-asyncpg
+opentelemetry-instrumentation-logging
+opentelemetry-instrumentation-psycopg2
+opentelemetry-instrumentation-redis

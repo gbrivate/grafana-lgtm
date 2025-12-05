@@ -12,9 +12,9 @@ distributor:
           endpoint: "127.0.0.1:4418"
 
 ingester:
-  trace_idle_period: 500ms          # ↓ Wait less before flushing spans
-  max_block_duration: 2s            # ↓ Short blocks for faster ingestion
-  flush_check_period: 500ms         # ↓ Check more frequently
+  trace_idle_period: 1s
+  max_block_duration: 1s
+  flush_check_period: 1s
   lifecycler:
     address: 127.0.0.1
     ring:
@@ -36,15 +36,13 @@ storage:
     backend: local
     wal:
       path: /data/tempo/wal
-      flush_check_period: 500ms
     local:
       path: /data/tempo/blocks
-      blocklist_poll: 2s
 
 metrics_generator:
   processor:
     service_graphs:
-      wait: 1s                     # ↓ Shorten service graph build interval
+      wait: 1s
       max_items: 1000
     local_blocks:
       filter_server_spans: false
@@ -53,20 +51,13 @@ metrics_generator:
         - service_name
         - operation
         - status_code
-
   traces_storage:
     path: /data/tempo/generator/traces
-
   storage:
     path: /data/tempo/generator/wal
     remote_write:
       - url: http://127.0.0.1:9090/api/v1/write
         send_exemplars: true
-        queue_config:
-          max_samples_per_send: 1000
-          batch_send_deadline: 1s   # ↓ Flush metrics every second
-          min_backoff: 200ms
-          max_backoff: 1s
 
 overrides:
   metrics_generator_processors: [service-graphs, local-blocks, span-metrics]

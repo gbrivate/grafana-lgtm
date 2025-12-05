@@ -47,3 +47,28 @@ hey -n 200 -c 50 -q 1 \
 -H "Content-Type: application/json" \
 -d '{"key": "user15", "value": "Ola mundo!! "}' \
 http://localhost:8080/fastapi-kafka/produce
+
+
+## docker commands
+docker rmi $(docker images | grep "^<none>" | awk "{print $3}")
+docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
+docker images -a | grep none | awk '{ print $3; }' | xargs docker rmi --force
+
+docker rmi $(docker images -f "dangling=true" -q)
+
+# remove contianer stoped
+docker container prune
+
+#  delete all images
+docker system prune -a -f
+
+## stop all container
+docker stop $(docker ps -a -q) && docker system prune -a -f
+
+# stop container and remove it
+docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
+
+# list container and it's name
+docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
+
+

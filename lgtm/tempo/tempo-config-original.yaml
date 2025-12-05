@@ -41,6 +41,9 @@ storage:
 
 metrics_generator:
   processor:
+    service_graphs:
+      enabled: true
+      include_messaging_systems: true
     local_blocks:
       filter_server_spans: false
     span_metrics:

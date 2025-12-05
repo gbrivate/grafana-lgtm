@@ -6,7 +6,7 @@ ENV OTEL_SERVICE_NAME=corban-msc-kafka \
     OTEL_LOG_LEVEL=info \
     OTEL_EXPORTER_OTLP_INSECURE=true \
     OTEL_EXPORTER_OTLP_PROTOCOL=grpc \
-    OTEL_EXPORTER_OTLP_ENDPOINT=http://grafana-service.lgtm.svc.cluster.local:4317 \
+    OTEL_EXPORTER_OTLP_ENDPOINT=http://grafana:4317 \
     OTEL_PYTHON_LOG_CORRELATION=true \
     OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true \
     OTEL_METRICS_EXPORT_INTERVAL=5000 \
@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose FastAPI port
-EXPOSE 8001
+EXPOSE 8004
 
 # Run FastAPI with OTel auto-instrumentation
-CMD ["opentelemetry-instrument", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["opentelemetry-instrument", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8004"]

@@ -4,6 +4,7 @@ aiohttp
 aiokafka
 pydantic
 uvloop
+httpx[http2]
 
 # --- OpenTelemetry Auto Instrumentation ---
 opentelemetry-distro
@@ -12,3 +13,5 @@ opentelemetry-instrumentation-fastapi
 opentelemetry-instrumentation-asyncio
 opentelemetry-instrumentation-aiohttp-client
 opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-httpx
+opentelemetry-instrumentation-grpc

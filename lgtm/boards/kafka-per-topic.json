@@ -464,7 +464,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum by (topic) (rate(kafka_topic_bytes_out_total{topic=~\"$topic\"}[5m]))",
+          "expr": "sum by (topic) (rate(kafka_topic_bytes_out_total{topic=~\"$topic\"}[$__rate_interval]))",
           "refId": "A"
         }
       ],
@@ -559,7 +559,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum by (topic) (rate(kafka_topic_messages_in_total{topic=~\"$topic\"}[5m]))",
+          "expr": "sum by (topic) (rate(kafka_topic_messages_in_total{topic=~\"$topic\"}[$__rate_interval]))",
           "refId": "A"
         }
       ],
@@ -749,7 +749,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(rate(kafka_network_io_bytes_total[5m]))",
+          "expr": "sum(rate(kafka_network_io_bytes_total[$__rate_interval]))",
           "refId": "A"
         }
       ],
@@ -844,7 +844,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum by (topic) (rate(kafka_request_failed_total{topic=~\"$topic\"}[5m]))",
+          "expr": "sum by (topic) (rate(kafka_request_failed_total{topic=~\"$topic\"}[$__rate_interval]))",
           "refId": "A"
         }
       ],

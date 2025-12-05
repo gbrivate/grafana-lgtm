@@ -12,6 +12,16 @@ kind load docker-image corban-msc-fastapi
 kubectl apply -f k8s.yaml
 
 
+docker container stop fastapi
+docker container remove fastapi
+docker build --no-cache  --tag corban-msc-fastapi:latest .
+docker run -p 8001:8001 \
+    --name fastapi \
+    --network=mynet \
+    -t corban-msc-fastapi:latest
+
+
+
 kubectl logs deployments/corban-msc-fastapi-deployment -n corban
 
 
