@@ -29,7 +29,7 @@ async def startup_event():
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
         client_id="corban-msc-kafka",
         acks="all",
-        linger_ms=5,
+        linger_ms=0,
         max_request_size=10_485_760,
         value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         key_serializer=lambda v: v.encode("utf-8") if v else None,

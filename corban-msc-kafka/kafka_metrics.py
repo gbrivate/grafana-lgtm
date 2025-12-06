@@ -103,6 +103,8 @@ class MonitoredProducer:
                     topic=topic, value=value, key=key, headers=full_headers, **kwargs
                 )
 
+                LOG.info("Response producer result: %s", result)
+
                 # the broker may set throttle_time_ms on the produce response
                 throttle_ms = int(getattr(result, "throttle_time_ms", 0) or 0)
 
@@ -111,16 +113,6 @@ class MonitoredProducer:
                 # message counter + size + throttle + duration recorded in finally block too - but keep per-message records here for accuracy
                 message_counter.add(1, attrs)
                 message_size_histogram.record(_bytes_length_of_value(value), attrs)
-
-                LOG.info(
-                        "Producer throttle detected: client_id=%s topic=%s throttle_ms=%d offset=%s partition=%s",
-                        getattr(self._producer, "client_id", None),
-                        topic,
-                        throttle_ms,
-                        getattr(result, "offset", None),
-                        getattr(result, "partition", None),
-                        result,
-                )
 
                 # attach details to span
                 span.set_attribute(SpanAttributes.MESSAGING_KAFKA_MESSAGE_OFFSET, getattr(result, "offset", None))

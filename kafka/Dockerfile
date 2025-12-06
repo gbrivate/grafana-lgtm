@@ -5,6 +5,7 @@ FROM apache/kafka:latest
 # ===============================
 COPY otel_javaagent/opentelemetry-javaagent.jar /opt/opentelemetry-javaagent.jar
 COPY otel_javaagent/kafka-custom.yaml /opt/kafka-custom.yaml
+COPY server.properties /opt/kafka/config/server.properties
 
 # ===============================
 # 2. Base Kafka Configuration (KRaft)
@@ -29,7 +30,8 @@ ENV TZ=America/Sao_Paulo \
 ENV KAFKA_CLIENT_QUOTA_CALLBACKS="org.apache.kafka.server.quota.ClientQuotaCallback" \
     KAFKA_CLIENT_QUOTA_CALLBACK_STATIC_BRACKETS="[{client_id: '*', producer_byte_rate: 1000}]" \
     KAFKA_QUOTA_WINDOW_NUM=1 \
-    KAFKA_QUOTA_WINDOW_SIZE_SECONDS=1
+    KAFKA_QUOTA_WINDOW_SIZE_SECONDS=1 \
+    KAFKA_JMX_PORT=9999
 
 # ===============================
 # 4. JMX for OTEL Metrics (mandatory)
@@ -39,8 +41,8 @@ ENV KAFKA_JMX_OPTS="\
     -Dcom.sun.management.jmxremote.authenticate=false \
     -Dcom.sun.management.jmxremote.ssl=false \
     -Dcom.sun.management.jmxremote.local.only=false \
-    -Djava.rmi.server.hostname=0.0.0.0" \
-    KAFKA_JMX_PORT=9999
+    -Djava.rmi.server.hostname=0.0.0.0"
+
 
 # ===============================
 # 5. OTEL Java Agent Configuration
@@ -57,13 +59,11 @@ ENV KAFKA_OPTS="\
   -Dotel.traces.exporter=otlp \
   -Dotel.logs.exporter=otlp \
   -Dotel.metric.export.interval=5000 \
-  -Dotel.javaagent.debug=fase \
+  -Dotel.javaagent.debug=false \
   -Dotel.instrumentation.messaging.enabled=true \
   -Dotel.instrumentation.kafka-metrics.enabled=true"
 
 # ===============================
-# 6. JVM Heap Config
+# 5. JVM Heap Config
 # ===============================
 ENV KAFKA_HEAP_OPTS="-Xms1g -Xmx1g"
-
-# base image already provides entrypoint

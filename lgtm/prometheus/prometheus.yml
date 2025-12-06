@@ -1,6 +1,6 @@
 global:
   scrape_interval: 2s
-  evaluation_interval: 2s
+  evaluation_interval: 3s
   scrape_timeout: 4s
 
 # Alertmanager configuration
@@ -19,7 +19,7 @@ rule_files:
 # Here it's Prometheus itself.
 scrape_configs:
   - job_name: "prometheus"
-    scrape_interval: 5s
+    scrape_interval: 2s
     static_configs:
       - targets: ["localhost:9090"]
         labels:
@@ -28,7 +28,7 @@ scrape_configs:
   - job_name: "kafka"
     honor_labels: true
     metrics_path: /metrics
-    scrape_interval: 5s
+    scrape_interval: 2s
     static_configs:
       - targets:
           - 'kafka-service.default.svc.cluster.local:7071'
@@ -39,7 +39,7 @@ scrape_configs:
   - job_name: "kube-state-metrics"
     honor_labels: true
     metrics_path: /metrics
-    scrape_interval: 5s
+    scrape_interval: 2s
     static_configs:
       - targets: [ "ksm-kube-state-metrics.kube-system.svc.cluster.local:8080" ]
 
