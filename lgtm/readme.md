@@ -32,6 +32,6 @@ docker run -p 3000:3000 -p 4317:4317 -p 4318:4318 -p 4040:4040 -p 9090:9090  \
     --network=mynet \
     lgtm:1.0
 
-## Queires tempo
+## Queires tempo\\\
 
 {status=error} | rate() by (resource.service.name)

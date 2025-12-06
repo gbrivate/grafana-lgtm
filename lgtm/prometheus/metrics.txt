@@ -1,3 +1,3 @@
 # Ver todas metrics de um service
 
-count({service_name="corban-msc-fastapi"}) by (__name__)
+count({service_name="fastapi-msc-test"}) by (__name__)

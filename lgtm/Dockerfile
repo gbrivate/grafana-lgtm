@@ -19,6 +19,8 @@ COPY grafana/grafana-dashboards.yaml /otel-lgtm/grafana/conf/provisioning/dashbo
 COPY boards/ /otel-lgtm/
 
 ENV TZ=America/Sao_Paulo \
+    LOG_LEVEL=debug \
+    OTEL_LOG_LEVEL=debug
 
 #    # --- Query performance ---
 #    GF_QUERY_CONCURRENT_QUERY_LIMIT=128 \

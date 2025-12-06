@@ -1014,8 +1014,8 @@
     "list": [
       {
         "current": {
-          "text": "corban-msc-kafka",
-          "value": "corban-msc-kafka"
+          "text": "kafka",
+          "value": "kafka"
         },
         "datasource": {
           "type": "prometheus",

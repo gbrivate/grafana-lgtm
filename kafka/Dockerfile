@@ -4,8 +4,8 @@ FROM apache/kafka:latest
 # 1. Copy OpenTelemetry Javaagent
 # ===============================
 COPY otel_javaagent/opentelemetry-javaagent.jar /opt/opentelemetry-javaagent.jar
-COPY otel_javaagent/kafka-custom.yaml /opt/kafka-custom.yaml
-COPY server.properties /opt/kafka/config/server.properties
+COPY otel_javaagent/kafka-custom-1.yaml /opt/kafka-custom.yaml
+#COPY config/server-original-docker-image.properties /opt/kafka/config/server.properties
 
 # ===============================
 # 2. Base Kafka Configuration (KRaft)

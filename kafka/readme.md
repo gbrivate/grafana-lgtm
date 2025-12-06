@@ -37,3 +37,6 @@ docker run -p 8003:8003 \
     --name kafka \
     --network=mynet \
     -t kafka:1.0
+
+## kafka config files path
+/opt/kafka/config

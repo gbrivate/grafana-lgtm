@@ -88,7 +88,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(rate(http_server_request_duration_seconds_count{job=\"corban-msc-java\"}[$__rate_interval]))",
+          "expr": "sum(rate(http_server_request_duration_seconds_count{job=\"java-msc-test\"}[$__rate_interval]))",
           "legendFormat": "req/s",
           "range": true,
           "refId": "A"
@@ -181,7 +181,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(http_server_request_duration_seconds_sum{job=\"corban-msc-java\"}[5m])) by (http_route) / sum(rate(http_server_request_duration_seconds_count{job=\"corban-msc-java\"}[5m])) by (http_route)",
+          "expr": "sum(rate(http_server_request_duration_seconds_sum{job=\"java-msc-test\"}[5m])) by (http_route) / sum(rate(http_server_request_duration_seconds_count{job=\"java-msc-test\"}[5m])) by (http_route)",
           "legendFormat": "{{http_route}}",
           "refId": "A"
         }
@@ -241,7 +241,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(rate(http_server_request_duration_seconds_count{job=\"corban-msc-java\", http_response_status_code=~\"4..|5..\"}[$__rate_interval]))",
+          "expr": "sum(rate(http_server_request_duration_seconds_count{job=\"java-msc-test\", http_response_status_code=~\"4..|5..\"}[$__rate_interval]))",
           "legendFormat": "errors/s",
           "range": true,
           "refId": "A"
@@ -341,7 +341,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(http_server_response_size_bytes_sum{job=\"corban-msc-java\"}[1m]))",
+          "expr": "sum(rate(http_server_response_size_bytes_sum{job=\"java-msc-test\"}[1m]))",
           "legendFormat": "resp bytes / s",
           "refId": "B"
         }
@@ -429,17 +429,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum(rate(http_server_request_duration_seconds_bucket{job=\"corban-msc-java\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_request_duration_seconds_bucket{job=\"java-msc-test\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.90, sum(rate(http_server_request_duration_seconds_bucket{job=\"corban-msc-java\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.90, sum(rate(http_server_request_duration_seconds_bucket{job=\"java-msc-test\"}[5m])) by (le))",
           "legendFormat": "p90",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{job=\"corban-msc-java\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{job=\"java-msc-test\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -527,7 +527,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "http_server_active_requests{job=\"corban-msc-java\"}",
+          "expr": "http_server_active_requests{job=\"java-msc-test\"}",
           "legendFormat": "active",
           "refId": "A"
         }
@@ -633,7 +633,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "jvm_memory_used_bytes{job=\"corban-msc-java\", jvm_memory_type=\"heap\"}",
+          "expr": "jvm_memory_used_bytes{job=\"java-msc-test\", jvm_memory_type=\"heap\"}",
           "legendFormat": "used",
           "range": true,
           "refId": "A"
@@ -722,7 +722,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_memory_used{job=\"corban-msc-java\", area=\"nonheap\"}",
+          "expr": "jvm_memory_used{job=\"java-msc-test\", area=\"nonheap\"}",
           "legendFormat": "nonheap used",
           "refId": "A"
         }
@@ -810,7 +810,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{job=\"corban-msc-java\"}[5m])",
+          "expr": "rate(jvm_gc_collection_seconds_sum{job=\"java-msc-test\"}[5m])",
           "legendFormat": "{{gc}}",
           "refId": "A"
         }
@@ -898,7 +898,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_threads_live{job=\"corban-msc-java\"}",
+          "expr": "jvm_threads_live{job=\"java-msc-test\"}",
           "legendFormat": "live",
           "refId": "A"
         }
@@ -986,7 +986,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_class_count{job=\"corban-msc-java\"}",
+          "expr": "jvm_class_count{job=\"java-msc-test\"}",
           "legendFormat": "loaded",
           "refId": "A"
         }
@@ -1074,7 +1074,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "process_cpu_usage{job=\"corban-msc-java\"}",
+          "expr": "process_cpu_usage{job=\"java-msc-test\"}",
           "legendFormat": "cpu",
           "refId": "A"
         }
@@ -1142,7 +1142,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "increase(otlp_exporter_exported_total{job=\"corban-msc-java\", type=\"metric\"}[5m])",
+          "expr": "increase(otlp_exporter_exported_total{job=\"java-msc-test\", type=\"metric\"}[5m])",
           "legendFormat": "exported",
           "refId": "A"
         }
@@ -1197,7 +1197,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "increase(otlp_exporter_seen_total{job=\"corban-msc-java\", type=\"metric\"}[5m])",
+          "expr": "increase(otlp_exporter_seen_total{job=\"java-msc-test\", type=\"metric\"}[5m])",
           "legendFormat": "seen",
           "refId": "A"
         }
