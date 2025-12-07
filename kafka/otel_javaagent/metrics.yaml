@@ -1,0 +1,203 @@
+rules:
+
+  ################################################################
+  # Broker Quota CONFIGURATION (kafka.server:type=ClientQuota)
+  # Captures the CONFIGURED quota rates (e.g., 1000 B/s).
+  # Rule 1 covers both default (client-id='') and specific client IDs.
+  ################################################################
+
+  - bean: "kafka.server:type=ClientQuota,client-id=*"
+    metricAttribute:
+      client_id: param(client-id)
+    mapping:
+      ThrottleTime:
+        metric: kafka_quota_client_throttle_time_ms
+        type: gauge
+        desc: "The configured throttle time quota for a client."
+        unit: "ms"
+      ProduceByteRate:
+        metric: kafka_quota_client_produce_byte_rate
+        type: gauge
+        desc: "The configured produce byte rate for a client."
+        unit: "By/s"
+      FetchByteRate:
+        metric: kafka_quota_client_fetch_byte_rate
+        type: gauge
+        desc: "The configured fetch byte rate for a client."
+        unit: "By/s"
+      RequestPercentage:
+        metric: kafka_quota_default_request_percentage
+        type: gauge
+        desc: "Default entity request percentage usage"
+        unit: "1"
+
+  # Rule 2: User + Client ID Quotas
+  - bean: "kafka.server:type=ClientQuota,user=*,client-id=*"
+    metricAttribute:
+      user: param(user)
+      client_id: param(client-id)
+    mapping:
+      ThrottleTime:
+        metric: kafka_quota_user_client_throttle_time_ms
+        type: gauge
+        desc: "Throttle time quota for user+client combination"
+        unit: "ms"
+      ProduceByteRate:
+        metric: kafka_quota_user_client_produce_byte_rate
+        type: gauge
+        desc: "Produce byte rate quota for user+client"
+        unit: "By/s"
+
+  ################################################################
+  # Broker LIVE Throttle Metrics (Actual delay enforced by broker)
+  # Uses the reliable kafka.network MBean pattern.
+  ################################################################
+
+  - beans:
+      - "kafka.network:type=RequestMetrics,name=ThrottleTimeMs,request=Produce"
+      - "kafka.network:type=RequestMetrics,name=ThrottleTimeMs,request=FetchConsumer"
+      - "kafka.network:type=RequestMetrics,name=ThrottleTimeMs,request=FetchFollower"
+    metricAttribute:
+      request: param(request)
+    mapping:
+      Count:
+        metric: kafka_throttle_count_total
+        type: counter
+        desc: Total number of throttle events
+        unit: "1"
+      Mean:
+        metric: kafka_throttle_time_ms_avg
+        type: gauge
+        desc: Average throttle time (ms)"
+        unit: "ms"
+      99thPercentile:
+        metric: kafka_throttle_time_ms_p99
+        type: gauge
+        desc: 99th percentile throttle time"
+        unit: "ms"
+
+  ################################################################
+  # Broker Topic Metrics
+  ################################################################
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec,topic=*"
+    metricAttribute:
+      topic: param(topic)
+    mapping:
+      Count:
+        metric: kafka_topic_bytes_in_total
+        type: counter
+        desc: Total number of bytes received per topic
+        unit: "By"
+      OneMinuteRate:
+        metric: kafka_topic_bytes_in_1m_rate
+        type: gauge
+        desc: Average bytes in per second (1m rate)
+        unit: "By/s"
+
+  - bean: "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec,topic=*"
+    metricAttribute:
+      topic: param(topic)
+    mapping:
+      Count:
+        metric: kafka_topic_bytes_out_total
+        type: counter
+        desc: Total number of bytes sent per topic
+        unit: "By"
+      OneMinuteRate:
+        metric: kafka_topic_bytes_out_1m_rate
+        type: gauge
+        desc: Average bytes out per second (1m rate)
+        unit: "By/s"
+
+  ################################################################
+  # Broker Request Quota Usage (Non-Throttle Time)
+  ################################################################
+
+  - beans:
+      - "kafka.server:type=Request,request=Produce"
+      - "kafka.server:type=Request,request=Fetch"
+    metricAttribute:
+      request: param(request)
+    mapping:
+      RequestThrottleTimeMs:
+        metric: kafka_request_quota_throttle_time_ms
+        type: gauge
+        desc: "Request quota throttle time (ms)"
+        unit: "ms"
+      RequestPercentage:
+        metric: kafka_request_quota_percentage
+        type: gauge
+        desc: "Request quota usage percentage"
+        unit: "1"
+
+  ################################################################
+  # Broker Request Latency and Counts
+  ################################################################
+
+  - beans:
+      - "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce"
+      - "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchConsumer"
+      - "kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchFollower"
+    metricAttribute:
+      request: param(request)
+    mapping:
+      Count:
+        metric: kafka_request_count_total
+        type: counter
+        desc: Total number of requests
+        unit: "1"
+      99thPercentile:
+        metric: kafka_request_latency_99p_ms
+        type: gauge
+        desc: 99th percentile request latency"
+        unit: "ms"
+      Mean:
+        metric: kafka_request_latency_mean_ms
+        type: gauge
+        desc: Mean request latency"
+        unit: "ms"
+
+  ################################################################
+  # Broker Queue Sizes, Replica Status, and Controller Status
+  ################################################################
+
+  - bean: "kafka.network:type=RequestChannel,name=RequestQueueSize"
+    mapping:
+      Value:
+        metric: kafka_request_queue_size
+        type: gauge
+        desc: Number of requests waiting in the request queue
+        unit: "1"
+
+  - bean: "kafka.network:type=RequestChannel,name=ResponseQueueSize"
+    mapping:
+      Value:
+        metric: kafka_response_queue_size
+        type: gauge
+        desc: Number of responses waiting in the response queue
+        unit: "1"
+
+  - bean: "kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions"
+    mapping:
+      Value:
+        metric: kafka_partition_under_replicated
+        type: gauge
+        desc: Number of under-replicated partitions
+        unit: "1"
+
+  - bean: "kafka.server:type=ReplicaManager,name=OfflinePartitionsCount"
+    mapping:
+      Value:
+        metric: kafka_partition_offline
+        type: gauge
+        desc: Number of offline partitions
+        unit: "1"
+
+  - bean: "kafka.controller:type=KafkaController,name=ActiveControllerCount"
+    mapping:
+      Value:
+        metric: kafka_controller_active
+        type: gauge
+        desc: 1 if this broker is the active controller, 0 otherwise
+        unit: "1"

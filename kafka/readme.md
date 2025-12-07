@@ -40,3 +40,19 @@ docker run -p 8003:8003 \
 
 ## kafka config files path
 /opt/kafka/config
+
+## quota
+docker exec -e JAVA_TOOL_OPTIONS='-Dotel.javaagent.enabled=false' -e KAFKA_OPTS='' kafka /opt/kafka/bin/kafka-configs.sh \
+--bootstrap-server localhost:9092 \
+--alter --add-config 'producer_byte_rate=100,consumer_byte_rate=100' \
+--entity-type clients --entity-default
+
+## list metrics inside docker container
+docker exec -u 0 kafka sh -c "\
+    wget -qO /tmp/jmxterm.jar https://repo1.maven.org/maven2/org/cyclopsgroup/jmxterm/1.0.4/jmxterm-1.0.4-uber.jar && \
+    echo 'beans' | java -cp /tmp/jmxterm.jar org.cyclopsgroup.jmxterm.boot.CliMain -l localhost:9101 -n"
+ 
+## logs throttle 
+docker exec -e KAFKA_OPTS='' kafka /opt/kafka/bin/kafka-configs.sh --bootstrap-server localhost:9092 --alter --add-config 'producer_byte_rate=1000,consumer_byte_rate=1000' --entity-type clients --entity-default
+
+docker exec kafka tail -f /opt/kafka/logs/server.log | grep -i throttle  

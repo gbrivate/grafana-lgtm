@@ -1,11 +1,12 @@
 FROM apache/kafka:latest
 
+#COPY config/server-minimal.properties /opt/kafka/config/server.properties
+
 # ===============================
 # 1. Copy OpenTelemetry Javaagent
 # ===============================
 COPY otel_javaagent/opentelemetry-javaagent.jar /opt/opentelemetry-javaagent.jar
-COPY otel_javaagent/kafka-custom-1.yaml /opt/kafka-custom.yaml
-#COPY config/server-original-docker-image.properties /opt/kafka/config/server.properties
+COPY otel_javaagent/metrics.yaml /opt/kafka-custom.yaml
 
 # ===============================
 # 2. Base Kafka Configuration (KRaft)
@@ -20,35 +21,22 @@ ENV TZ=America/Sao_Paulo \
     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP="CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT" \
     KAFKA_CONTROLLER_LISTENER_NAMES="CONTROLLER" \
     KAFKA_LOG_DIRS="/tmp/kraft-combined-logs" \
-    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+    KAFKA_CLIENT_QUOTA_CALLBACK_STATIC_BRACKETS="[{client_id: '*', producer_byte_rate: 200}]"
+
+# ------------------------------------------------------------------
+# DELETE SECTION 4 entirely: KAFKA_JMX_OPTS
+# ------------------------------------------------------------------
 
 # ===============================
-# 3. Kafka Client Quotas (STATIC)
+# 5. OTEL Java Agent Configuration (MERGED)
 # ===============================
-# GLOBAL throttle: every producer limited to 200 bytes/sec
-# This guarantees throttle_time_ms > 0 under load
-ENV KAFKA_CLIENT_QUOTA_CALLBACKS="org.apache.kafka.server.quota.ClientQuotaCallback" \
-    KAFKA_CLIENT_QUOTA_CALLBACK_STATIC_BRACKETS="[{client_id: '*', producer_byte_rate: 1000}]" \
-    KAFKA_QUOTA_WINDOW_NUM=1 \
-    KAFKA_QUOTA_WINDOW_SIZE_SECONDS=1 \
-    KAFKA_JMX_PORT=9999
-
-# ===============================
-# 4. JMX for OTEL Metrics (mandatory)
-# ===============================
-ENV KAFKA_JMX_OPTS="\
-    -Dcom.sun.management.jmxremote \
-    -Dcom.sun.management.jmxremote.authenticate=false \
-    -Dcom.sun.management.jmxremote.ssl=false \
-    -Dcom.sun.management.jmxremote.local.only=false \
-    -Djava.rmi.server.hostname=0.0.0.0"
-
-
-# ===============================
-# 5. OTEL Java Agent Configuration
-# ===============================
-ENV KAFKA_OPTS="\
-  -javaagent:/opt/opentelemetry-javaagent.jar \
+ENV KAFKA_OPTS="-javaagent:/opt/opentelemetry-javaagent.jar \
+  -Dcom.sun.management.jmxremote \
+  -Dcom.sun.management.jmxremote.authenticate=false \
+  -Dcom.sun.management.jmxremote.ssl=false \
+  -Dcom.sun.management.jmxremote.local.only=false \
+  -Djava.rmi.server.hostname=0.0.0.0 \
   -Dotel.instrumentation.jmx.enabled=true \
   -Dotel.jmx.target.system=kafka-broker \
   -Dotel.jmx.config=/opt/kafka-custom.yaml \
@@ -63,7 +51,9 @@ ENV KAFKA_OPTS="\
   -Dotel.instrumentation.messaging.enabled=true \
   -Dotel.instrumentation.kafka-metrics.enabled=true"
 
+EXPOSE 9102
+
 # ===============================
-# 5. JVM Heap Config
+# 6. JVM Heap Config
 # ===============================
 ENV KAFKA_HEAP_OPTS="-Xms1g -Xmx1g"
