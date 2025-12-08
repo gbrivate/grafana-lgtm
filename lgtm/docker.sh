@@ -1,5 +1,4 @@
 #!/bin/bash
-
 clear
 docker container stop grafana
 docker container remove grafana

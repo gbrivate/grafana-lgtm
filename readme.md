@@ -1,74 +1,327 @@
-## Add the ingress-nginx Helm repo
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
-helm install ingress-nginx ingress-nginx/ingress-nginx \
---namespace ingress-nginx \
---create-namespace \
---set controller.admissionWebhooks.enabled=false
+# Complete Monitoring & Instrumentation Stack
 
+This repository provides a **full end‑to‑end monitoring, observability, and instrumentation environment** using Kubernetes (via KinD), OpenTelemetry, and the Grafana **LGTM stack** (Loki, Grafana, Tempo, Prometheus, OTEL Collector).
 
-## force cleanup ingress-nginx
-kubectl api-resources --verbs=list --namespaced=true -o name \
-| xargs -n 1 kubectl get --show-kind --ignore-not-found -n ingress-nginx
+It also includes multiple **sample applications** (FastAPI, FastAPI + DB, Spring Boot, Apache Kafka, PostgreSQL) deployed on Kubernetes and fully observable through OTEL.
 
+---
+
+## 🚀 Overview
+
+This project brings together:
+
+* **KinD (Kubernetes-in-Docker)** for a lightweight local Kubernetes cluster.
+* **Grafana OTEL LGTM stack** using the official `grafana/otel-lgtm:latest` Docker image.
+* **OpenTelemetry (OTEL)** for metrics, logs, and traces.
+* **Full set of sample microservices**:
+
+    * FastAPI
+    * FastAPI + PostgreSQL
+    * Spring Boot
+    * Apache Kafka
+    * PostgreSQL database
+* **Complete Kubernetes deployment configuration**:
+
+    * Deployments
+    * Services
+    * Ingress
+* **All microservices exposed via an Ingress Controller**.
+
+The purpose is to demonstrate **complete monitoring, tracing, logging, metrics, and distributed observability** for modern microservices running in a real Kubernetes cluster.
+
+---
+
+## 🧱 Architecture
+
+* **KinD cluster** hosts everything locally
+* **Grafana OTEL LGTM** stack provides the following:
+
+    * **Loki** → Logs
+    * **Tempo** → Traces
+    * **Prometheus** → Metrics
+    * **OTEL Collector** → Receives and routes telemetry data
+* Each application is fully instrumented using OTEL SDK or auto-instrumentation
+* Telemetry is sent to the Collector → Prometheus / Tempo / Loki
+* Grafana dashboards visualize all services
+* Everything is deployed using standard Kubernetes YAML
+
+---
+
+## 📦 Included Sample Applications
+
+### ✔ FastAPI
+Basic Python API instrumented with OpenTelemetry.
+
+### ✔ FastAPI + PostgreSQL
+API including database calls, demonstrating OTEL database instrumentation.
+
+### ✔ Spring Boot
+A Java microservice using OTEL Java Agent for auto‑instrumentation.
+
+### ✔ Apache Kafka
+Kafka broker + producers/consumers instrumented for distributed tracing.
+
+### ✔ PostgreSQL Database
+Running in a container inside the cluster.
+
+---
+
+## ☸️ Kubernetes Resources
+
+Each application includes:
+
+* **Deployment** → containers, versions, env vars
+* **Service** → internal service endpoints
+* **Ingress** → external route via Ingress Controller
+
+All services are accessible through a single ingress (e.g. `http://localhost/<service>`).
+
+---
+
+## 📊 Monitoring & Observability
+
+All observability signals are enabled:
+
+### 📈 Metrics
+Collected via OTEL SDK / Collector and scraped by Prometheus.
+
+### 📂 Logs
+Collected using OTEL logging exporter and stored in Loki.
+
+### 🔍 Traces
+Distributed tracing using OTLP → Tempo.
+
+### 🖥 Dashboards
+Grafana provides:
+
+* Application dashboards
+* Service maps
+* Trace waterfall views
+* Log aggregation views
+
+---
+
+## 🧰 Requirements
+
+* Docker
+* KinD
+* kubectl
+
+---
+
+## ▶️ How to start
+
+> Instructions depend on your cluster setup and repo structure.
+
+Example workflow:
+
+```bash
+# Create cluster\kind create cluster --config kind-config.yaml
+
+# Deploy LGTM stack
+kubectl apply -f lgtm/
+
+# Deploy sample apps
+kubectl apply -f apps/
+```
+
+---
+
+## 📝 Purpose
+
+This repository exists to provide a **complete, ready‑to‑use local observability lab**:
+
+* Perfect for learning OTEL
+* Testing distributed tracing
+* Building dashboards
+* Understanding Kubernetes observability patterns
+* Experimenting with multiple languages and workloads
+
+---
+
+## 📄 License
+
+MIT or your preferred license.
+
+---
+
+## 🧭 Architecture Diagram
+
+Below is a conceptual overview of the observability stack in this repository:
+
+                                User / Browser (http://localhost/...)
+                                                |
+                                                |
+    +-------------------------------------------|-----------------------------------+
+    |  KUBERNETES CLUSTER (KinD)                v                                   |
+    |                                 +---------------------+                       |
+    |                                 |  Ingress Controller |                       |
+    |                                 +----------+----------+                       |
+    |                                            |                                  |         
+    |              ______________________________|_____________                     |
+    |            |                                             |                    |
+    |            v                                             v                    | 
+    |  +---------------------+           +---------------------------------------+  |
+    |  |  Ingress Controller |---------->|  LGTM Stack (grafana/otel-lgtm)       |  |
+    |  +----------+----------+           |                                       |  |
+    |             |                      |  +-----------+      +--------------+  |  |
+    |             |                      |  | Grafana   |<---->| Prometheus   |  |  |
+    |             |                      |  | UI        |<---->| Tempo        |  |  |
+    |             v                      |  +-----------+      | Loki         |  |  |
+    |  +------------------------+        |                     +-------^------+  |  |
+    |  | Application Workloads  |        |                             |         |  |
+    |  |                        |        |                      +------+-------+ |  |
+    |  | [FastAPI] [SpringBoot] |        |                      | OTEL         | |  |
+    |  | [Postgres] [Kafka]     |        |                      +------+-------+ |  |
+    |  | [redis]                |        +--------+--------------------^---------+  |
+    |  +----------+-------------+                                      |            |
+    |             |                                                    |            |
+    |             +----(OTLP Telemetry: Logs, Metrics, Traces)---------+            |
+    |                                                                               |
+    +-------------------------------------------------------------------------------+
+
+---
+
+## 🧩 Folder Structure (Recommended)
+
+If your repo already follows another structure, I can adjust this section.
+
+```
+
+repo/
+├── apps/
+│   ├── fastapi/
+│   ├── fastapi-db/
+│   ├── springboot/
+│   ├── kafka/
+│   └── postgres/
+│
+├── k8s/
+│   ├── deployments/
+│   ├── services/
+│   ├── ingress/
+│   └── namespace.yaml
+│
+├── lgtm/   # Grafana+OTEL stack
+│
+├── kind-config.yaml
+├── README.md
+└── docs/
+    └── architecture.md
+```
+
+---
+
+## 🔧 Setup Guide (Step-by-Step)
+
+### 1️⃣ Create the KinD Cluster
+
+```bash
+kind create cluster --config kind-config.yaml
+```
+
+### 2️⃣ Install NGINX Ingress Controller
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.0/deploy/static/provider/kind/deploy.yaml
+```
+
+Wait for it:
+
+```bash
 kubectl get pods -n ingress-nginx
-kubectl -n ingress-nginx get services
-kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80
-kubectl get ingress -A -n ingress-nginx
+```
 
-kubectl logs deployments/ingress-nginx-controller -n ingress-nginx
+### 3️⃣ Deploy LGTM (Grafana + OTEL)
 
-kubectl rollout restart deployment ingress-nginx-controller -n ingress-nginx
+```bash
+kubectl apply -f lgtm/
+```
 
-helm uninstall ingress-nginx -n ingress-nginx
-kubectl delete namespace ingress-nginx
+### 4️⃣ Deploy Sample Applications
 
+```bash
+kubectl apply -f apps/
+```
 
-kubectl get all -n ingress-nginx
+### 5️⃣ Access Grafana
 
-helm install ingress-nginx ingress-nginx/ingress-nginx \
---namespace ingress-nginx \
---create-namespace \
---set controller.admissionWebhooks.enabled=false
+```
+http://localhost/grafana
+```
 
-## Install curl using the appropriate Package Manager
-Base Image OS,Package Manager,Update Command,Install Command (for curl)
-Debian/Ubuntu,apt or apt-get,apt-get update,apt-get install -y curl
-Alpine,apk,Not required for apk add,apk add --no-cache curl
-RHEL/CentOS/Fedora,yum or dnf,yum check-update (or dnf check-update),yum install -y curl (or dnf install -y curl)
+Default credentials (unless modified):
 
-1 - docker exec -it my-container /bin/bash
-2 - apt-get update
-3 - apt-get install -y curl
+```
+user: admin
+pass: admin
+```
 
-## hey test
-hey -n 200 -c 50 -q 1 \
--m POST \
--H "Content-Type: application/json" \
--d '{"key": "user15", "value": "Ola mundo!! "}' \
-http://localhost:8080/fastapi-kafka/produce
+---
 
+## 🎯 Key Observability Features Demonstrated
 
-## docker commands
-docker rmi $(docker images | grep "^<none>" | awk "{print $3}")
-docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
-docker images -a | grep none | awk '{ print $3; }' | xargs docker rmi --force
+### 🔹 **Automatic Tracing** across microservices
 
-docker rmi $(docker images -f "dangling=true" -q)
+* Kafka → FastAPI
+* FastAPI → PostgreSQL
+* FastAPI → other services
+* Spring Boot → Kafka → DB
 
-# remove contianer stoped
-docker container prune
+### 🔹 **Logs correlated with Traces** using Loki
 
-#  delete all images
-docker system prune -a -f
+### 🔹 **Metrics for all workloads** (HTTP, JVM, DB, Kafka, Python, etc.)
 
-## stop all container
-docker stop $(docker ps -a -q) && docker system prune -a -f
+### 🔹 **Service Graphs generated by Tempo + Grafana**
 
-# stop container and remove it
-docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
+### 🔹 **Dashboards using Prometheus metrics**
 
-# list container and it's name
-docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
+---
 
+## 🧪 Load Testing Examples
 
+You can use `hey` or `k6` to generate traffic.
+
+Example with `hey`:
+
+```bash
+hey -n 20000 -c 100 \
+  -m POST \
+  -H "Content-Type: application/json" \
+  -d '{"key":"user1","value":"hello world"}' \
+  http://localhost/api/produce
+```
+
+---
+
+## 🛠 Troubleshooting
+
+### Not seeing traces?
+
+* Check OTEL Collector endpoint in your apps
+* Verify kube-dns is working
+* Ensure OTLP exporters are configured
+
+### Not seeing logs?
+
+* Verify Loki is running
+* Ensure OTEL logger provider is enabled
+
+### Not seeing metrics?
+
+* Confirm Prometheus scraping config
+* Ensure OTEL metrics exporter is active
+
+---
+
+## ❤️ Contributions
+
+Feel free to open PRs for:
+
+* new sample apps
+* new dashboards
+* new observability experiments
+
+---
+
+Enjoy the setup and happy observability! 🎉 🚀
