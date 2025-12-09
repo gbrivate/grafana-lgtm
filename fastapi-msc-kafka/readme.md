@@ -1,8 +1,8 @@
 ## Docker
 docker build --tag fastapi-msc-kafka:latest .
 kind load docker-image fastapi-msc-kafka 
-kubectl rollout restart deployment fastapi-msc-kafka-deployment -n corban
-kubectl port-forward svc/fastapi-msc-kafka-service 8001:8001 -n corban
+kubectl rollout restart deployment fastapi-msc-kafka-deployment -n applications
+kubectl port-forward svc/fastapi-msc-kafka-service 8001:8001 -n applications
 
 
 docker run -p 8002:8002 fastapi-msc-kafka:latest
@@ -13,14 +13,14 @@ kubectl apply -f k8s.yaml
 
 docker build --tag fastapi-msc-kafka:latest .
 kind load docker-image fastapi-msc-kafka
-kubectl rollout restart deployment fastapi-msc-kafka-deployment -n corban
-kubectl logs deployments/fastapi-msc-kafka-deployment  -n corban
+kubectl rollout restart deployment fastapi-msc-kafka-deployment -n applications
+kubectl logs deployments/fastapi-msc-kafka-deployment  -n applications
 
 
 hey -n 1000 -c 10 -q 2 http://localhost:8002/rolldice
 
 
-kubectl -n corban exec -it deploy/fastapi-msc-kafka-deployment -- sh
+kubectl -n applications exec -it deploy/fastapi-msc-kafka-deployment -- sh
 curl localhost:9464/metrics | grep kafka
 
 ## docker cleaning up

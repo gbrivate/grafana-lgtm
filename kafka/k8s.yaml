@@ -49,28 +49,3 @@ spec:
     - name: jmx
       port: 7071
       targetPort: 7071
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: kafka-ingress
-  namespace: applications
-  annotations:
-    # 1. Altera o rewrite-target para usar $1
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
-    # 2. Habilita o uso de RegEx no path (boa prática com $1)
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    kubernetes.io/ingress.class: "nginx"
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: localhost
-      http:
-        paths:
-          - path: /kafka/(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: kafka-service
-                port:
-                  number: 7071

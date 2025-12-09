@@ -1,0 +1,294 @@
+# =====================================================
+# RECEIVERS
+# =====================================================
+receivers:
+
+  # ---------------------------------------------------
+  # PostgreSQL Metrics Receiver  (FIXED)
+  # ---------------------------------------------------
+  postgresql:
+    # Must use connection string WITHOUT "postgresql://"
+    # OTEL uses pgx driver → uri scheme must be "postgres://"
+    endpoint: postgres://myuser:mypassword@postgres:5432/mydb?sslmode=disable
+    collection_interval: 10s
+    transport: conn
+
+    # Remove invalid metric names (your list contained some removed ones)
+    metrics:
+      enable:
+        - postgresql.connections
+        - postgresql.commits
+        - postgresql.rollbacks
+        - postgresql.rows
+        - postgresql.blocks
+        - postgresql.conflicts
+        - postgresql.temp_files
+        - postgresql.table_states
+
+  # ---------------------------------------------------
+  # OTLP Receiver
+  # ---------------------------------------------------
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins: ["http://*"]
+
+  # ---------------------------------------------------
+  # Prometheus Scraper
+  # ---------------------------------------------------
+  prometheus/collector:
+    config:
+      scrape_configs:
+        - job_name: otelcol-self
+          static_configs:
+            - targets: ["127.0.0.1:8888"]
+          scrape_interval: 5s
+
+        - job_name: ksm
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["ksm-kube-state-metrics.kube-system.svc.cluster.local:8080"]
+          scrape_interval: 5s
+
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+          scrape_interval: 5s
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: "true"
+
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+
+            - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+              action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $1:$2
+              target_label: __address__
+
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: kubernetes_namespace
+
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: kubernetes_pod_name
+
+  # ---------------------------------------------------
+  # Kubernetes Receivers
+  # ---------------------------------------------------
+  k8s_cluster:
+    auth_type: serviceAccount
+
+  k8s_events:
+    auth_type: serviceAccount
+
+  kubeletstats:
+    auth_type: serviceAccount
+    endpoint: "${env:K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+    metric_groups: [node, pod, container, volume]
+    collection_interval: 30s
+
+  # ---------------------------------------------------
+  # Filelog Receiver
+  # ---------------------------------------------------
+  filelog:
+    include:
+      - /var/log/pods/*/*/*.log
+      - /var/lib/postgresql/data/log/*.log
+    exclude: ["/var/log/pods/*/otc-container/*.log"]
+    include_file_path: true
+    start_at: end
+
+    operators:
+      - type: regex_parser
+        regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+
+      - type: json_parser
+        parse_from: attributes.log
+        if: 'attributes.log != nil'
+
+      - type: regex_parser
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9-]+)\/(?P<container_name>[^._]+)\/(?P<restart_count>\d+)\.log$'
+        parse_from: attributes["log.file.path"]
+        if: 'attributes["log.file.path"] != nil'
+
+      - type: move
+        from: attributes.namespace
+        to: resource["k8s.namespace.name"]
+
+      - type: move
+        from: attributes.pod_name
+        to: resource["k8s.pod.name"]
+
+      - type: move
+        from: attributes.container_name
+        to: resource["k8s.container.name"]
+
+      - type: move
+        from: attributes.uid
+        to: resource["k8s.pod.uid"]
+
+  # ---------------------------------------------------
+  # Host Metrics
+  # ---------------------------------------------------
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu: {}
+      disk: {}
+      filesystem: {}
+      load: {}
+      memory: {}
+      network: {}
+      paging: {}
+      processes: {}
+
+# =====================================================
+# EXTENSIONS
+# =====================================================
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+# =====================================================
+# PROCESSORS
+# =====================================================
+processors:
+  memory_limiter:
+    check_interval: 2s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+  batch:
+    timeout: 5s
+
+  k8sattributes:
+    auth_type: serviceAccount
+    passthrough: false
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.node.name
+
+  resourcedetection:
+    detectors: [env, system, docker, kubernetes]
+
+  resource:
+    attributes:
+      - key: k8s.cluster.name
+        value: "${env:K8S_CLUSTER_NAME}"
+        action: upsert
+
+  transform/logs:
+    log_statements:
+      - context: log
+        statements:
+          - set(severity_text, attributes["level"]) where attributes["level"] != nil
+          - set(severity_text, attributes["severity"]) where attributes["severity"] != nil
+          - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "info"
+          - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text in ["warn","warning"]
+          - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_text == "error"
+          - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "debug"
+
+  attributes/cleanup:
+    actions:
+      - key: log.file.path
+        action: delete
+      - key: logtag
+        action: delete
+
+# =====================================================
+# EXPORTERS
+# =====================================================
+exporters:
+
+  otlphttp/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
+    tls:
+      insecure: true
+
+  otlphttp/traces:
+    endpoint: http://127.0.0.1:4418
+    tls:
+      insecure: true
+
+  otlphttp/logs:
+    endpoint: http://127.0.0.1:3100/otlp
+    tls:
+      insecure: true
+
+  otlp/profiles:
+    endpoint: http://127.0.0.1:4040
+    tls:
+      insecure: true
+
+  # Local OTLP (used for all)
+  otlp:
+    endpoint: http://127.0.0.1:4317
+    tls:
+      insecure: true
+
+# =====================================================
+# PIPELINES
+# =====================================================
+service:
+
+  extensions: [health_check, pprof, zpages]
+
+  telemetry:
+    logs:
+      level: "debug"       # <----- FULL DEBUG MODE
+    metrics:
+      address: 0.0.0.0:8888
+
+  pipelines:
+
+    # -------------------------------------------------
+    # Traces
+    # -------------------------------------------------
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
+      exporters: [otlp, otlphttp/traces]
+
+    # -------------------------------------------------
+    # Metrics  (WITH POSTGRESQL RECEIVER)
+    # -------------------------------------------------
+    metrics:
+      receivers: [otlp, prometheus/collector, k8s_cluster, kubeletstats, hostmetrics, postgresql]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
+      exporters: [otlp, otlphttp/metrics]
+
+    # -------------------------------------------------
+    # Logs
+    # -------------------------------------------------
+    logs:
+      receivers: [otlp, filelog, k8s_events]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource, transform/logs, attributes/cleanup, batch]
+      exporters: [otlp, otlphttp/logs]
+
+    # -------------------------------------------------
+    # Profiles
+    # -------------------------------------------------
+    profiles:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resourcedetection, resource]
+      exporters: [otlp, otlp/profiles]

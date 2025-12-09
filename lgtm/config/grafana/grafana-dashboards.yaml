@@ -1,0 +1,41 @@
+apiVersion: 1
+
+providers:
+  - name: "JVM Metrics"
+    type: file
+    options:
+      path: /otel-lgtm/grafana-dashboard-jvm-metrics.json
+      foldersFromFilesStructure: false
+  - name: "Fastapi msc"
+    type: file
+    options:
+      path: /otel-lgtm/fastapi-board.json
+      foldersFromFilesStructure: false
+  - name: "Fastapi + Kafka"
+    type: file
+    options:
+      path: /otel-lgtm/fastapi-kafka-board.json
+      foldersFromFilesStructure: false
+  - name: "K8s"
+    type: file
+    options:
+      path: /otel-lgtm/k8s-board.json
+      foldersFromFilesStructure: false
+  - name: "Kafka"
+    type: file
+    options:
+      path: /otel-lgtm/kafka-board.json
+      foldersFromFilesStructure: false
+  - name: "Kafka per topic"
+    type: file
+    options:
+      path: /otel-lgtm/kafka-per-topic.json
+      foldersFromFilesStructure: false
+  - name: "Pod inspector"
+    type: file
+    options:
+      path: /otel-lgtm/pod-inspector-board.json
+      foldersFromFilesStructure: false
+
+# /otel-lgtm/grafana/conf/provisioning/dashboards
+

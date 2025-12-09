@@ -12,6 +12,8 @@ spec:
       app: fastapi-msc-test
   template:
     metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "true"
       labels:
         app: fastapi-msc-test
     spec:

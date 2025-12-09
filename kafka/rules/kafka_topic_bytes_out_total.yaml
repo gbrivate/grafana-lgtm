@@ -1,7 +1,0 @@
-rules:
-  - pattern: 'kafka.server<type=BrokerTopicMetrics, name=BytesOutPerSec, topic=(.+)><>Count'
-    name: kafka_topic_bytes_out_total
-    type: counter
-    labels:
-      topic: $1
-    help: Bytes sent per topic per second

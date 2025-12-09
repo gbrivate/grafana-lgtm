@@ -15,6 +15,7 @@ spec:
       labels:
         app: lgtm
     spec:
+      serviceAccountName: lgtm-sa
       containers:
         - name: lgtm
           image: lgtm:1.0
@@ -42,6 +43,10 @@ spec:
               memory: 2048Mi
               cpu: 1000m
           env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: GF_SERVER_ROOT_URL
               value: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
@@ -97,4 +102,43 @@ spec:
                 name: grafana-service
                 port:
                   number: 3000
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lgtm-sa
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: lgtm-read-k8s
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - nodes
+      - namespaces
+      - services
+      - endpoints
+      - nodes/stats
+      - nodes/proxy
+      - nodes/metrics
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments", "replicasets", "statefulsets", "daemonsets" ]
+    verbs: [ "get", "list", "watch" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lgtm-read-k8s-binding
+roleRef:
+  kind: ClusterRole
+  name: lgtm-read-k8s
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: lgtm-sa
+    namespace: monitoring
 

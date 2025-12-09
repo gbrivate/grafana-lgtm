@@ -1,0 +1,152 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
+  prometheus/collector:
+    config:
+      scrape_configs:
+        - job_name: "opentelemetry-collector"
+          scrape_interval: 1s
+          static_configs:
+            - targets: ["127.0.0.1:8888"]
+
+  kubeletstats:
+    collection_interval: 5s
+    auth_type: "serviceAccount"
+    endpoint: "https://${NODE_NAME}:10250"
+    insecure_skip_verify: true
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'kube-state-metrics'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['ksm-kube-state-metrics.kube-system.svc.cluster.local:8080']
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: "/ready"
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 2048
+    spike_limit_mib: 512
+  batch:
+    send_batch_size: 10000
+    timeout: 10s
+  k8sattributes:
+    auth_type: "serviceAccount"
+    passthrough: false
+    extract:
+      metadata:
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.namespace.name
+        - k8s.node.name
+        - k8s.daemonset.name
+        - k8s.statefulset.name
+      labels:
+        - key: app
+        - key: app.kubernetes.io/name
+    # Associate IP/UID to find the correct metadata
+    pod_association:
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+      - sources:
+          - from: connection
+
+  # 2. BEAUTIFICATION: Rename and Flatten attributes
+  transform:
+    error_mode: ignore
+    metric_statements:
+      - context: datapoint
+        statements:
+          # FIXED: Uses 'datapoint.attributes' (v0.139+ requirement)
+          # Namespace
+          - set(datapoint.attributes["namespace"], resource.attributes["k8s.namespace.name"])
+          # Pod Name
+          - set(datapoint.attributes["pod"], resource.attributes["k8s.pod.name"])
+          # Deployment Name
+          - set(datapoint.attributes["deployment"], resource.attributes["k8s.deployment.name"])
+          # Set instance to Pod Name (Cleaner than GUID)
+          - set(datapoint.attributes["instance"], resource.attributes["k8s.pod.name"])
+          # Step B: If Step A failed (result is nil), grab the ReplicaSet name (e.g., "coredns-668d6bf9bc")
+          - set(datapoint.attributes["deployment"], resource.attributes["k8s.replicaset.name"]) where datapoint.attributes["deployment"] == nil
+          # Step C: If it's a DaemonSet, use that name instead
+          - set(datapoint.attributes["deployment"], resource.attributes["k8s.daemonset.name"]) where datapoint.attributes["deployment"] == nil
+          # Step D: REGEX CLEANUP
+          # If the name looks like "name-hash" (ReplicaSet style), strip the last hyphen and hash.
+          # Regex explanation: "-[a-f0-9]+$" means "a hyphen followed by hex characters at the end of the string"
+          - replace_pattern(datapoint.attributes["deployment"], "-[a-f0-9]+$", "")
+          # 3. Phase Label
+          - set(datapoint.attributes["phase"], resource.attributes["k8s.pod.phase"])
+          # NEW STATEMENT FOR METRIC RENAMING
+          # Use 'replace_all_patterns' on the metric name:
+          # Regex: '^kube_' matches 'kube_' at the start of the string
+          # Replacement: 'k8s_'
+          - replace_all_patterns(metric.name, "^kube_", "k8s_")
+
+exporters:
+  otlphttp/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
+    tls:
+      insecure: true
+  # METRICS: Prometheus Remote Write to Prometheus (127.0.0.1:9090)
+  prometheusremotewrite:
+    endpoint: http://127.0.0.1:9090/api/v1/write
+    tls:
+      insecure: true
+  otlphttp/traces:
+    endpoint: http://127.0.0.1:4418
+    tls:
+      insecure: true
+  otlphttp/logs:
+    endpoint: http://127.0.0.1:3100/otlp
+    tls:
+      insecure: true
+  otlp/profiles:
+    endpoint: http://127.0.0.1:4040
+    tls:
+      insecure: true
+  debug/metrics:
+    verbosity: detailed
+  debug/traces:
+    verbosity: detailed
+  debug/logs:
+    verbosity: detailed
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, batch]
+      exporters: [otlphttp/traces]
+      #exporters: [otlphttp/traces,debug/traces]
+    metrics:
+      receivers: [otlp, prometheus/collector, kubeletstats, prometheus]
+      processors: [memory_limiter, k8sattributes, batch]
+      exporters: [otlphttp/metrics, prometheusremotewrite]
+      #exporters: [otlphttp/metrics,debug/metrics]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, batch]
+      exporters: [otlphttp/logs]
+      #exporters: [otlphttp/logs,debug/logs]
+    profiles:
+      receivers: [otlp]
+      exporters: [otlp/profiles]

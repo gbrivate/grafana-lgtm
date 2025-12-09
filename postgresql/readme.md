@@ -1,7 +1,7 @@
 # build image
 docker build --no-cache -t postgres:1.0 .
 kind load docker-image postgres:latest
-kubectl rollout restart deployment postgres-deployment -n corban
+kubectl rollout restart deployment postgres-deployment -n applications
 
 kubectl apply -f k8s.yaml
 
@@ -14,12 +14,12 @@ docker run -p 5432:5432 \
     -t postgres:1.0
 
 
-kubectl rollout restart deployment postgres-deployment -n corban
-kubectl delete  -n corban deployment postgres-deployment
+kubectl rollout restart deployment postgres-deployment -n applications
+kubectl delete  -n applications deployment postgres-deployment
 
-kubectl port-forward svc/postgres-service 5432:5432 -n corban
-kubectl get pods  -n corban -w
+kubectl port-forward svc/postgres-service 5432:5432 -n applications
+kubectl get pods  -n applications -w
 
-kubectl logs  deployments/postgres-deployment -n corban
+kubectl logs  deployments/postgres-deployment -n applications
 
-kubectl describe -n corban pod 
+kubectl describe -n applications pod 

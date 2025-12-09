@@ -164,34 +164,71 @@ Below is a conceptual overview of the observability stack in this repository:
 
 ---
 
-## 🧩 Folder Structure (Recommended)
-
-If your repo already follows another structure, I can adjust this section.
+## 🧩 Folder Structure 
 
 ```
-
-repo/
-├── apps/
-│   ├── fastapi/
-│   ├── fastapi-db/
-│   ├── springboot/
-│   ├── kafka/
-│   └── postgres/
+grafana-lgtm            # Root folder
 │
-├── k8s/
-│   ├── deployments/
-│   ├── services/
-│   ├── ingress/
-│   └── namespace.yaml
+├── fastapi-msc-db      # FastAPI app with OTEL, Sqlalchemy, Postgres.
+│   ├── app/            # Python files, requirements etc.
+│   ├── docker.sh       # Running container with docker only.
+│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
+│   ├── k8s.yaml        # K8s deployment/service/ingress config.
+│   └── readme.md       # Readme.md for specific instructions.
 │
-├── lgtm/   # Grafana+OTEL stack
+├── fastapi-msc-kafka   # FastAPI app with OTEL, custom metric, Kafka.
+│   ├── app/            # Python files, requirements etc.
+│   ├── test/           # Stress test Kafak and unit test.
+│   ├── docker.sh       # Running container with docker only.
+│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
+│   ├── k8s.yaml        # K8s deployment/service/ingress config.
+│   └── readme.md       # Readme.md for specific instructions.
 │
-├── kind-config.yaml
-├── README.md
-└── docs/
-    └── architecture.md
+├── fastapi-msc-test    # FastAPI app with OTEL, custom metric.
+│   ├── app/            # Python files, requirements etc.
+│   ├── docker.sh       # Running container with docker only.
+│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
+│   ├── k8s.yaml        # K8s deployment/service/ingress config.
+│   └── readme.md       # Readme.md for specific instructions.
+│
+├── java-msc-test       # Spring boot app with OTEL
+│   ├── src/            # Source, controller, unit test etc.
+│   ├── test/           # Stress test
+│   ├── docker.sh       # Running container with docker only.
+│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
+│   ├── k8s.yaml        # K8s deployment/service/ingress config.
+│   ├── opentelemetry-javaagent-1.32.0.jar # For instrumentation, there is other ways to do it using maven libs etc. 
+│   └── readme.md       # Readme.md for specific instructions.
+│
+├── kafka               # Apache kafka
+│   ├── config/         # Overwrite configs for kafka.
+│   ├── otel_javaagent/ # Java Agent jar, custom kafka metris.
+│   ├── docker.sh       # Running container with docker only.
+│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
+│   ├── k8s.yaml        # K8s deployment/service/ingress config. 
+│   └── readme.md       # Readme.md for specific instructions.
+│
+├── lgtm/               # Grafana+OTEL stack
+│   ├── boards/         # Custom boards.
+│   ├── config/         # Overwrite default configs (grafana, loki, otel, prometheus and tempo).
+│   ├── docker.sh       # Running container with docker only.
+│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
+│   ├── k8s.yaml        # K8s deployment/service/ingress config. 
+│   └── readme.md       # Readme.md for specific instructions.
+│
+├── postgresql/         # PostgresSQL 
+│   ├── boards/         # Custom boards.
+│   ├── config/         # Overwrite default configs
+│   ├── docker.sh       # Running container with docker only.
+│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
+│   ├── k8s.yaml        # K8s deployment/service/ingress config. 
+│   └── readme.md       # Readme.md for specific instructions.
+│
+├── .gitignore          
+├──  grafana.png        # Grafana dashboard image
+├──  kind-config.yaml   # Custom kind cluster
+└──  readme.md
 ```
-
 ---
 
 ## 🔧 Setup Guide (Step-by-Step)
@@ -242,6 +279,7 @@ Tempo                   => trace database.
 Loki                    => logs database.
 Grafana                 => for visualization.
 ```
+Building and deployment into k8s
 
 ```
 # Building docker image and loading it into kind cluster
@@ -262,37 +300,12 @@ kubectl get -n monitoring pods
 NAME                                  READY   STATUS    RESTARTS   AGE
 grafana-deployment-8458dd4b69-k27x9   1/1     Running   0          15s
 ```
-Open browser at http://localhost/grafana then you should see that:
+Open browser at http://localhost/grafana (admim/admin) then you should see that:
 
-![Grafana home page](img.png)
+![Grafana home page](grafana.png)
 
-### 4️⃣ Deploy Sample Applications "[fastapi-msc-test](fastapi-msc-test)" 
-
-```
-# Let's build the docker image and deploy it into k8s
-cd fastapi-msc-test
-docker build --no-cache  --tag fastapi-msc-test:latest .
-
-#Load docker image into Kind cluster
-kind load docker-image fastapi-msc-test
- 
-# For all application we need create a k8s namespace, otherwise it's use default which is not good, just run it once.
-kubectl create namespace applications
-
-# Apply k8s.yaml that has deployment/service/ingress route
-kubectl apply -f k8s.yaml
-
-# check if pod is running
-kubectl get -n applications pods 
-NAME                                          READY   STATUS        RESTARTS   AGE
-fastapi-msc-test-deployment-f5747c55f-btppl   1/1     Running       0          30s
-
-# test using curl "curl http://localhost/fastapi/hello?name=test" you should this response
-{"hello":"test"} 
-```
-
-### 5️⃣ Instrumenting FastAPI app using Otel modules
-The 'fastapi' app is already instrumented, which means, we are using some of these modules below, if you use accordingly.
+### 4️⃣ Instrumenting FastAPI app using Otel modules
+we are using some of these modules below to instrument FastAPI apps, use it accordingly.
 ```
 # Must have
 opentelemetry-distro                            # Provides the OTEL SDK + API.
@@ -313,35 +326,127 @@ opentelemetry-instrumentation-psycopg2           # Auto-instruments PostgreSQL c
 opentelemetry-instrumentation-redis              # Auto-instruments Redis client operations.
 ```
 
-OK, we got k8s running, first app running and working through ingress controller
+If you check [Dockerfile](fastapi-msc-test/Dockerfile) you will some ENV set up the auto-instrument.
 
-
-
-```
-kubectl apply -f lgtm/
-```
-
-### 6️⃣
-
-```
-kubectl apply -f apps/
-```
-
-### 7️⃣ Access Grafana
-
-```
-http://localhost/grafana
+```docker
+# Core environment variables for OpenTelemetry
+ENV OTEL_SERVICE_NAME=fastapi-msc-test \
+    OTEL_RESOURCE_ATTRIBUTES="service.version=1.0,deployment.environment=development,team=my-team" \
+    OTEL_EXPORTER_OTLP_INSECURE=true \
+    OTEL_EXPORTER_OTLP_ENDPOINT=http://grafana-service.monitoring.svc.cluster.local:4317 \
+    OTEL_PYTHON_LOG_CORRELATION=true \
+    OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true \
+    OTEL_METRICS_EXPORT_INTERVAL=5000 \
+    TZ=America/Sao_Paulo
 ```
 
-Default credentials (unless modified):
+There is a plenty of option for the OTEL core, and for specifics stacks.
+<br><br>
+[OTEL - Core](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables)<br> 
+[OTEL - Python](https://opentelemetry.io/docs/zero-code/python/configuration)<br>
+[OTEL - Java](https://opentelemetry.io/docs/zero-code/java/)<br>
+[OTEL - Js](https://opentelemetry.io/docs/zero-code/js/)
+
+### 5️⃣  Deploy Sample Applications "[fastapi-msc-test](fastapi-msc-test)"
 
 ```
-user: admin
-pass: admin
+# Let's build the docker image and deploy it into k8s
+cd fastapi-msc-test
+docker build --no-cache  --tag fastapi-msc-test:latest .
+
+#Load docker image into Kind cluster
+kind load docker-image fastapi-msc-test
+ 
+# For all application we need create a k8s namespace, otherwise it's use default which is not good, just run it once.
+kubectl create namespace applications
+
+# Apply k8s.yaml that has deployment/service/ingress route
+kubectl apply -f k8s.yaml
+
+# check if pod is running
+kubectl get -n applications pods 
+NAME                                          READY   STATUS        RESTARTS   AGE
+fastapi-msc-test-deployment-f5747c55f-btppl   1/1     Running       0          30s
+
+# Extras command in case you want check the logs or restart the deployment
+kubectl logs -n applications deployments/fastapi-msc-test-deployment
+kubectl rollout restart -n applications deployment fastapi-msc-test-deployment
+
+# test using curl 
+curl http://localhost/fastapi/hello?name=test
+{"hello":"test"} 
+
+curl --location 'http://localhost/fastapi/rolldice?player=test'
+{"result": "5"}
+
+curl --location 'http://localhost/fastapi/error?code=422'
+{
+"error_type": "Directly Passed Status Code",
+"requested_status_code": 422
+}
+```
+
+OK, we got k8s running, first app running, grafana, working through ingress controller, so far so good. ✅
+
+### 6️⃣ Let's create a dashboard for a FastAPI app.
+
+The main metrics to monitor are:
+- Total request per status code
+- Total request
+- RPS (sum)
+- Active Requests
+- RPS by Route
+- Request Latency (p50, p95, p99)
+- RPS by Route/code
+- Request Breakdown by Route and Status
+- Traces
+- Calls Correlation
+
+Playing around as your needs.
+
+📊 FastAPI Board
+
+This board can be found here [fastapi-board.json](lgtm/boards/fastapi-board.json)
+
+![fastapi-msc-test-grafana.png](fastapi-msc-test-grafana.png)
+
+📈 There Two-level visibility:
+
+- Application observability → what happens within your code (business logic, requests, errors).
+- Platform observability → what happens around your code (Kubernetes, network, resources, infrastructure).
+
+You don't need to choose between instrumenting Kubernetes or an application;
+ideally, you should combine both, each with a specific purpose.
+
+📜 Logs via Loki (Application observability, not stdout or stderr logs yet) 
+
+
+![fastapi-msc-test-logs-grafana.png](fastapi-msc-test-logs-grafana.png)
+
+🎯 Noticed we have a dashboard only with a service name filter, no k8s filters yet, in order to do it, we do need to instrument k8s as well.
+
+### 7️⃣ Instrumenting K8s
+
+One of the best way to instrument Kubernetes (K8s) using OpenTelemetry (Otel) for collecting logs, traces, and metrics is by leveraging the OpenTelemetry Operator combined with the OpenTelemetry Collector.
+
+This approach:
+- Centralizes configuration
+- Automates collection
+- Separates the concerns of data collection from application code, which is ideal for a dynamic container environment like Kubernetes.
+
+1 - Install cert-manager (Often Required)
+The OpenTelemetry Operator uses Admission Webhooks for its auto-instrumentation feature (injecting sidecars), which requires TLS certificates. The most common tool for managing these is cert-manager.
+```
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+```
+
+2 - Install the OpenTelemetry Operator
+```
+kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
 ```
 8️⃣
 9️⃣
----
+
 
 ## 🎯 Key Observability Features Demonstrated
 

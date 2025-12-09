@@ -2,10 +2,10 @@
 
 docker build --no-cache -t kafka-otel:latest .
 kind load docker-image kafka-otel:latest
-kubectl rollout restart deployment kafka-deployment -n corban
-kubectl port-forward svc/kafka-service 7071:7071 -n corban
-kubectl get pods  -n corban -w
-kubectl logs  deployments/kafka-deployment -n corban
+kubectl rollout restart deployment kafka-deployment -n applications
+kubectl port-forward svc/kafka-service 7071:7071 -n applications
+kubectl get pods  -n applications -w
+kubectl logs  deployments/kafka-deployment -n applications
 
 
 docker build --no-cache -t kafka-otel:latest .

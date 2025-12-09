@@ -1,8 +1,0 @@
-rules:
-  - bean: kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec
-    mapping:
-      Count:
-        metric: kafka.message.quantidade
-        type: counter
-        desc: The number of messages received by the broker
-        unit: "{messages}"

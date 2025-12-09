@@ -1,8 +1,8 @@
 ## Docker
 docker build --tag fastapi-msc-test:latest .
 kind load docker-image fastapi-msc-test 
-kubectl rollout restart deployment fastapi-msc-test-deployment -n corban
-kubectl port-forward svc/fastapi-msc-test-service 8002:8002 -n corban
+kubectl rollout restart deployment fastapi-msc-test-deployment -n applications
+kubectl port-forward svc/fastapi-msc-test-service 8002:8002 -n applications
 
 
 docker run -p 8002:8002 fastapi-msc-test:latest
@@ -22,7 +22,7 @@ docker run -p 8001:8001 \
 
 
 
-kubectl logs deployments/fastapi-msc-test-deployment -n corban
+kubectl logs deployments/fastapi-msc-test-deployment -n applications
 
 
 hey -n 1000 -c 1 -q 1 http://localhost:8080/fastapi/rolldice?player=gabriel

@@ -1,7 +1,0 @@
-rules:
-  - pattern: 'kafka.server<type=BrokerTopicMetrics, name=MessagesInPerSec, topic=(.+)><>Count'
-    name: kafka_topic_messages_in_total
-    type: counter
-    labels:
-      topic: $1
-    help: Messages produced per topic per second

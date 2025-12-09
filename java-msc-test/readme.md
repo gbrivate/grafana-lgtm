@@ -1,8 +1,8 @@
 ## Docker
 docker build --tag java-msc-test:latest .
 kind load docker-image java-msc-test 
-kubectl rollout restart deployment java-msc-test-deployment -n corban
-kubectl port-forward svc/java-msc-test-service 8080:8080 -n corban
+kubectl rollout restart deployment java-msc-test-deployment -n applications
+kubectl port-forward svc/java-msc-test-service 8080:8080 -n applications
 
 
 docker run -p 8002:8002 java-msc-test:latest
@@ -22,7 +22,7 @@ docker container remove java
 docker run -p 8080:8080 --name java --network=mynet -t java-msc-test:latest
 
 
-kubectl logs deployments/java-msc-test-deployment -n corban
+kubectl logs deployments/java-msc-test-deployment -n applications
 
 
 hey -n 200 -c 2 -q 1 http://localhost:8080/api/slow &&

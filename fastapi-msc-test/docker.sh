@@ -1,4 +1,5 @@
 #!/bin/bash
+# In case you wanna run only docker not on k8s
 clear
 docker container stop fastapi
 docker container remove fastapi

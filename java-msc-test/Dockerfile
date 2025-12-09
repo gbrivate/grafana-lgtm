@@ -1,55 +1,29 @@
-FROM maven:3.8.4-openjdk-17-slim
+FROM maven:3.8.4-openjdk-17-slim AS build
+
+WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:resolve
+
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+FROM eclipse-temurin:17-jre-alpine AS runtime
 
 WORKDIR /app
 
-# Copy pom first to leverage Docker caching
-COPY pom.xml .
+COPY --from=build /app/target/java-msc-test-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY opentelemetry-javaagent-1.32.0.jar /app/opentelemetry-javaagent.jar
 
-# Copy full project
-COPY src ./src
-
-RUN mvn package
-
-# Copy OTel Java Agent (make sure this file exists locally)
-COPY opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
-
-ENV TZ=America/Sao_Paulo
-
-# Use JAVA_TOOL_OPTIONS to inject the agent
 ENV JAVA_TOOL_OPTIONS="-javaagent:/app/opentelemetry-javaagent.jar \
     -Dotel.service.name=java-msc-test \
     -Dotel.resource.attributes=deployment.environment=dev,service.version=1.0.0 \
+    -Dotel.exporter.otlp.insecure=true \
     -Dotel.exporter.otlp.protocol=grpc \
-    -Dotel.exporter.otlp.endpoint=http://grafana:4317 \
+    -Dotel.exporter.otlp.endpoint=http://grafana-service.monitoring.svc.cluster.local:4317 \
     -Dotel.metrics.exporter=otlp \
     -Dotel.traces.exporter=otlp \
     -Dotel.logs.exporter=otlp \
-    -Dotel.resource.attributes=service.version=1.0.0 \
-    -Dotel.instrumentation.common.default-enabled=true \
-    -Dotel.instrumentation.servlet.enabled=true \
-    -Dotel.instrumentation.spring-web.enabled=true \
-    -Dotel.semconv-stability.opt-in=http,span,metrics,logs \
-    -Dotel.instrumentation.http.server.active-request-metrics.enabled=true \
-    -Dotel.instrumentation.http.server.request-body-size.enabled=true \
-    -Dotel.javaagent.debug=true \
-    -Dotel.instrumentation.http-server.debug=true \
-    -Dotel.instrumentation.http.server.response-body-size.enabled=true \
-    -Dotel.metric.export.interval=5000 \
-    -Dotel.metric.export.timeout=3000 \
-    -Dotel.instrumentation.http.enabled=true \
-    -Dotel.instrumentation.spring-boot.enabled=true \
-    -Dotel.logs.include.stacktrace=true \
-    -Dotel.logs.include.parameters=true \
-    -Dotel.java.experimental.log-attributes=true \
-    -Dotel.traces.sampler=parentbased_always_on \
-    -Dotel.instrumentation.http.capture-headers.server.request=x-request-id,authorization \
-    -Dotel.instrumentation.http.capture-headers.server.response=content-type \
-    -Dotel.instrumentation.jvm-metrics.enabled=true \
-    -Dotel.instrumentation.spring-boot-actuator.enabled=true"
+    -Dotel.instrumentation.jvm-metrics.enabled=true"
 
-EXPOSE 8080
-
-# ---------------------------------------------------------
-# Run the application with the agent
-# ---------------------------------------------------------
-CMD ["java", "-jar", "target/java-msc-test-0.0.1-SNAPSHOT.jar"]
+# 6. Command to run the application
+CMD ["java", "-jar", "app.jar"]

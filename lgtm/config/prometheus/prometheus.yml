@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 2s
+  evaluation_interval: 3s
+  scrape_timeout: 4s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+# - "first_rules.yml"
+# - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  - job_name: "prometheus"
+    scrape_interval: 2s
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          app: "prometheus"
+
+  - job_name: "kafka"
+    honor_labels: true
+    metrics_path: /metrics
+    scrape_interval: 2s
+    static_configs:
+      - targets:
+          - 'kafka-service.default.svc.cluster.local:7071'
+    metric_relabel_configs:
+      - action: labeldrop
+        regex: 'instance|job'
+
+  - job_name: "kube-state-metrics"
+    honor_labels: true
+    metrics_path: /metrics
+    scrape_interval: 2s
+    static_configs:
+      - targets: [ "ksm-kube-state-metrics.kube-system.svc.cluster.local:8080" ]
+
+query:
+  lookback_delta: 5m
+  max_concurrent: 100

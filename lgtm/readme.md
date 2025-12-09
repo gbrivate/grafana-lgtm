@@ -1,25 +1,27 @@
 ## Grafana lgtm stack
-kubectl delete namespace lgtm
-
-kubectl create namespace lgtm
+kubectl delete namespace monitoring
+kubectl create namespace monitoring
 
 docker build --no-cache --tag lgtm:1.0 .
 kind load docker-image lgtm:1.0
 kubectl rollout restart -n monitoring deployment grafana-deployment
-kubectl port-forward -n lgtm svc/grafana-service 3000:3000 9090:9090
+kubectl port-forward -n monitoring svc/grafana-service 3000:3000 9090:9090
 
-kubectl create namespace lgtm
+kubectl create namespace monitoring
 docker build --no-cache --tag lgtm:1.0 .
 kind load docker-image lgtm:1.0
 kubectl apply -f k8s.yaml
-kubectl port-forward -n lgtm svc/grafana-service 3000:3000 9090:9090
+kubectl port-forward -n monitoring svc/grafana-service 3000:3000 9090:9090
 
-kubectl describe pod -n lgtm grafana-deployment-59479f8cbb-dpxrl
+kubectl describe pod -n monitoring grafana-deployment-59479f8cbb-dpxrl
 
-kubectl create namespace lgtm
+kubectl create namespace monitoring
 kubectl apply -f k8s.yaml
-kubectl logs -n lgtm deployments/grafana-deployment
-kubectl get pods -n lgt
+kubectl logs -n monitoring deployments/grafana-deployment -f
+kubectl get pods -n monitoring
+
+kubectl rollout restart -n monitoring deployment grafana-deployment
+kubectl logs -n monitoring deployments/grafana-deployment -f
 
 
 clear
@@ -35,3 +37,4 @@ docker run -p 3000:3000 -p 4317:4317 -p 4318:4318 -p 4040:4040 -p 9090:9090  \
 ## Queires tempo\\\
 
 {status=error} | rate() by (resource.service.name)
+

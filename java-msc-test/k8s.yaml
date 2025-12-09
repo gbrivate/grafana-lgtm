@@ -12,6 +12,8 @@ spec:
       app: java-msc-test
   template:
     metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "true"
       labels:
         app: java-msc-test
     spec:
