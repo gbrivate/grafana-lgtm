@@ -196,7 +196,7 @@ repo/
 
 ## 🔧 Setup Guide (Step-by-Step)
 
-### 1 Create the KinD Cluster
+### 1️⃣ Create the KinD Cluster
 
 ```
 kind create cluster --config kind-config.yaml
@@ -213,7 +213,7 @@ kube-system          kube-scheduler-kind-control-plane            1/1     Runnin
 local-path-storage   local-path-provisioner-58cc7856b6-csxxx      1/1     Running   0          47s
 ```
 
-### 2 Install NGINX Ingress Controller
+### 2️⃣ Install NGINX Ingress Controller
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.0/deploy/static/provider/kind/deploy.yaml
@@ -232,7 +232,7 @@ ingress-nginx-controller-77cdd96884-qcmb2   1/1     Running     0          97s
 Test http://localhost you should get "404 Not Found nginx" from nginx controller setup, which is ok.
 Before we instrument k8s, let's deploy a simple FastAPI app with some endpoints and expose it via ingress controller.
 
-### 3 Deploying LGTM (Grafana + OTEL)
+### 3️⃣ Deploying LGTM (Grafana + OTEL)
 
 We are going to use this docker image 'grafana/otel-lgtm:0.12.0' which has:
 ```
@@ -266,7 +266,7 @@ grafana-deployment-8458dd4b69-k27x9   1/1     Running   0          15s
 ![Grafana home page](img.png)
 ```
 
-### 4 Deploy Sample Applications "[fastapi-msc-test](fastapi-msc-test)" 
+### 4️⃣ Deploy Sample Applications "[fastapi-msc-test](fastapi-msc-test)" 
 
 ```
 # Let's build the docker image and deploy it into k8s
@@ -291,7 +291,7 @@ fastapi-msc-test-deployment-f5747c55f-btppl   1/1     Running       0          3
 {"hello":"test"} 
 ```
 
-### 4 Instrumenting FastAPI app using Otel modules
+### 5️⃣ Instrumenting FastAPI app using Otel modules
 The 'fastapi' app is already instrumented, which means, we are using some of these modules below, if you use accordingly.
 ```
 # Must have
@@ -321,13 +321,13 @@ OK, we got k8s running, first app running and working through ingress controller
 kubectl apply -f lgtm/
 ```
 
-### 4️⃣ 
+### 6️⃣
 
 ```
 kubectl apply -f apps/
 ```
 
-### 5️⃣ Access Grafana
+### 7️⃣ Access Grafana
 
 ```
 http://localhost/grafana
@@ -339,7 +339,8 @@ Default credentials (unless modified):
 user: admin
 pass: admin
 ```
-
+8️⃣
+9️⃣
 ---
 
 ## 🎯 Key Observability Features Demonstrated
