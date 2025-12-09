@@ -261,9 +261,9 @@ kubectl apply -f k8s.yaml
 kubectl get -n monitoring pods
 NAME                                  READY   STATUS    RESTARTS   AGE
 grafana-deployment-8458dd4b69-k27x9   1/1     Running   0          15s
-
-# Open brower and test it http://localhost/grafana you should that:
 ```
+Open browser at http://localhost/grafana then you should see that:
+
 ![Grafana home page](img.png)
 
 ### 4️⃣ Deploy Sample Applications "[fastapi-msc-test](fastapi-msc-test)" 
