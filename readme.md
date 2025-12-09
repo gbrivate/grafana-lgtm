@@ -109,24 +109,6 @@ Grafana provides:
 
 ---
 
-## ▶️ How to start
-
-> Instructions depend on your cluster setup and repo structure.
-
-Example workflow:
-
-```bash
-# Create cluster\kind create cluster --config kind-config.yaml
-
-# Deploy LGTM stack
-kubectl apply -f lgtm/
-
-# Deploy sample apps
-kubectl apply -f apps/
-```
-
----
-
 ## 📝 Purpose
 
 This repository exists to provide a **complete, ready‑to‑use local observability lab**:
@@ -214,33 +196,134 @@ repo/
 
 ## 🔧 Setup Guide (Step-by-Step)
 
-### 1️⃣ Create the KinD Cluster
+### 1 Create the KinD Cluster
 
-```bash
+```
 kind create cluster --config kind-config.yaml
+## After cluster created, run "kubectl get pods -ALL" you should get these pods running
+NAMESPACE            NAME                                         READY   STATUS    RESTARTS   AGE  
+kube-system          coredns-668d6bf9bc-9dcmg                     1/1     Running   0          47s   
+kube-system          coredns-668d6bf9bc-g2ck6                     1/1     Running   0          47s
+kube-system          etcd-kind-control-plane                      1/1     Running   0          52s
+kube-system          kindnet-ttcz2                                1/1     Running   0          47s
+kube-system          kube-apiserver-kind-control-plane            1/1     Running   0          52s
+kube-system          kube-controller-manager-kind-control-plane   1/1     Running   0          52s
+kube-system          kube-proxy-j6cdq                             1/1     Running   0          47s
+kube-system          kube-scheduler-kind-control-plane            1/1     Running   0          52s
+local-path-storage   local-path-provisioner-58cc7856b6-csxxx      1/1     Running   0          47s
 ```
 
-### 2️⃣ Install NGINX Ingress Controller
+### 2 Install NGINX Ingress Controller
 
-```bash
+```
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.0/deploy/static/provider/kind/deploy.yaml
 ```
 
 Wait for it:
 
-```bash
+```
 kubectl get pods -n ingress-nginx
+NAME                                        READY   STATUS      RESTARTS   AGE
+ingress-nginx-admission-create-th4m7        0/1     Completed   0          97s
+ingress-nginx-admission-patch-cjlv4         0/1     Completed   2          97s
+ingress-nginx-controller-77cdd96884-qcmb2   1/1     Running     0          97s
 ```
 
-### 3️⃣ Deploy LGTM (Grafana + OTEL)
+Test http://localhost you should get "404 Not Found nginx" from nginx controller setup, which is ok.
+Before we instrument k8s, let's deploy a simple FastAPI app with some endpoints and expose it via ingress controller.
 
-```bash
+### 3 Deploying LGTM (Grafana + OTEL)
+
+We are going to use this docker image 'grafana/otel-lgtm:0.12.0' which has:
+```
+OpenTelemetry collector => for receiving OpenTelemetry data.
+Prometheus              => metrics database.
+Tempo                   => trace database.
+Loki                    => logs database.
+Grafana                 => for visualization.
+```
+
+```
+# Building docker image and loading it into kind cluster
+cd lgtm
+docker build --no-cache --tag lgtm:1.0 .
+
+# It may take some time given the image size.
+kind load docker-image lgtm:1.0  
+
+# Create a k8s namespace 'monitoring', it's important create namespace and keep things separated
+kubectl create namespace monitoring
+
+# Applying k8s configs
+kubectl apply -f k8s.yaml
+
+# Verify if pod is runing
+kubectl get -n monitoring pods
+NAME                                  READY   STATUS    RESTARTS   AGE
+grafana-deployment-8458dd4b69-k27x9   1/1     Running   0          15s
+
+# Open brower and test it http://localhost/grafana you should that:
+![Grafana home page](img.png)
+```
+
+### 4 Deploy Sample Applications "[fastapi-msc-test](fastapi-msc-test)" 
+
+```
+# Let's build the docker image and deploy it into k8s
+cd fastapi-msc-test
+docker build --no-cache  --tag fastapi-msc-test:latest .
+
+#Load docker image into Kind cluster
+kind load docker-image fastapi-msc-test
+ 
+# For all application we need create a k8s namespace, otherwise it's use default which is not good, just run it once.
+kubectl create namespace applications
+
+# Apply k8s.yaml that has deployment/service/ingress route
+kubectl apply -f k8s.yaml
+
+# check if pod is running
+kubectl get -n applications pods 
+NAME                                          READY   STATUS        RESTARTS   AGE
+fastapi-msc-test-deployment-f5747c55f-btppl   1/1     Running       0          30s
+
+# test using curl "curl http://localhost/fastapi/hello?name=test" you should this response
+{"hello":"test"} 
+```
+
+### 4 Instrumenting FastAPI app using Otel modules
+The 'fastapi' app is already instrumented, which means, we are using some of these modules below, if you use accordingly.
+```
+# Must have
+opentelemetry-distro                            # Provides the OTEL SDK + API.
+opentelemetry-exporter-otlp                     # Allows exporting through OTLP (HTTP/gRPC).
+opentelemetry-instrumentation-logging           # This one injects trace_id and span_id into your logs automatically.
+
+# Option is you are using one of these modules
+opentelemetry-instrumentation-fastapi            # Auto-instruments FastAPI routes.
+opentelemetry-instrumentation-asyncio            # Helps propagate OTEL context between asyncio tasks — recommended but not required.
+opentelemetry-instrumentation-aiohttp-client     # Auto-instruments aiohttp client calls.
+opentelemetry-instrumentation-requests           # Auto-instruments the requests library.
+opentelemetry-instrumentation-httpx              # Auto-instruments HTTPX (sync/async).
+opentelemetry-instrumentation-grpc               # Auto-instruments gRPC client/server.
+opentelemetry-instrumentation-aiokafka           # Auto-instruments aiokafka producer/consumer automatically.
+opentelemetry-instrumentation-sqlalchemy         # Auto-instruments SQL queries executed by SQLAlchemy.
+opentelemetry-instrumentation-asyncpg            # Auto-instruments raw asyncpg queries.
+opentelemetry-instrumentation-psycopg2           # Auto-instruments PostgreSQL calls using psycopg2 (sync).
+opentelemetry-instrumentation-redis              # Auto-instruments Redis client operations.
+```
+
+OK, we got k8s running, first app running and working through ingress controller
+
+
+
+```
 kubectl apply -f lgtm/
 ```
 
-### 4️⃣ Deploy Sample Applications
+### 4️⃣ 
 
-```bash
+```
 kubectl apply -f apps/
 ```
 
@@ -284,7 +367,7 @@ You can use `hey` or `k6` to generate traffic.
 
 Example with `hey`:
 
-```bash
+```
 hey -n 20000 -c 100 \
   -m POST \
   -H "Content-Type: application/json" \

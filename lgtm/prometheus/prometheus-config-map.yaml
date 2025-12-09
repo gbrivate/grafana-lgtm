@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-override
-  namespace: lgtm
+  namespace: monitoring
 data:
   prometheus.yaml: |
     global:

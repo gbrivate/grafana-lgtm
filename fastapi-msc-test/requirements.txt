@@ -1,9 +1,5 @@
 fastapi
 uvicorn
-aiohttp
-aiokafka
-pydantic
-uvloop
 httpx[http2]
 
 # --- OpenTelemetry Auto Instrumentation ---

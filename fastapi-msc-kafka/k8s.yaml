@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fastapi-msc-kafka-deployment
-  namespace: corban
+  namespace: applications
   labels:
     app: fastapi-msc-kafka
 spec:
@@ -34,7 +34,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fastapi-msc-kafka-service
-  namespace: corban
+  namespace: applications
   labels:
     app: fastapi-msc-kafka
 spec:
@@ -49,7 +49,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: fastapi-msc-kafka-ingress
-  namespace: corban
+  namespace: applications
   annotations:
     # 1. Altera o rewrite-target para usar $1
     nginx.ingress.kubernetes.io/rewrite-target: /$1

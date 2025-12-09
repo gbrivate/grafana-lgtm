@@ -5,7 +5,7 @@ kubectl create namespace lgtm
 
 docker build --no-cache --tag lgtm:1.0 .
 kind load docker-image lgtm:1.0
-kubectl rollout restart -n lgtm deployment grafana-deployment
+kubectl rollout restart -n monitoring deployment grafana-deployment
 kubectl port-forward -n lgtm svc/grafana-service 3000:3000 9090:9090
 
 kubectl create namespace lgtm

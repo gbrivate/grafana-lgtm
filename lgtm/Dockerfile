@@ -1,4 +1,4 @@
-FROM grafana/otel-lgtm:latest
+FROM grafana/otel-lgtm:0.12.0
 
 # Optional: copy custom Grafana dashboards or configuration
 
