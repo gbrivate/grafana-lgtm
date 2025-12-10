@@ -9,27 +9,62 @@ receivers:
     max_concurrent_files: 1000
     poll_interval: 500ms
     operators:
-      # 1. FIX: Extract K8s Metadata (Namespace, Pod Name, UID, etc.) from the file path.
+      # 1. Extract K8s Metadata (Path Parser)
       - type: regex_parser
         regex: '^.*\/((?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9-]+))?\/(?P<container_name>[^._]+)\/(?P<restart_count>\d+)\.log$'
         parse_from: attributes["log.file.path"]
 
-      # 2. FIX: Parse the log line content (Timestamp, Stream, and Log Message)
+      # 2. Parse the CRI format: Extract TIMESTAMP, STREAM, and RAW LOG CONTENT
       - type: regex_parser
-        regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<log>.*)$' # Creates attributes: time, stream, log
+        regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<log>.*)$' # 'log' now holds: "F {JSON...}"
 
-      # 3. FIX: Parse the timestamp from the *newly created* attributes.time field
+      # 3. Time Parser (UNCHANGED)
       - type: time_parser
         layout: '%Y-%m-%dT%H:%M:%S.%fZ'
-        parse_from: attributes.time # Reads attribute.time (created in step 2)
-        parse_to: time              # Writes the final timestamp to the LogRecord time field
+        parse_from: attributes.time
+        parse_to: time
 
-      # 4. Promote log content to body and clean up attributes
+      # 4. JSON Parsing Attempt - FIXED
+      # Changed '{.*}' to '{.*?}' to make the capture non-greedy.
+      - type: regex_parser
+        name: capture_json_if_present_and_clean
+        regex: '^(?:F\s+)?\s*(?P<json_data>\{.*?\})\s*(?P<log>.*)$'
+        parse_from: attributes.log
+        parse_to: attributes
+
+      # 5. Conditional JSON Parsing
+      # This operator *only runs* if 'json_data' was successfully created by the regex above.
+      # If 'json_data' is present, this step parses the JSON, promoting fields like 'trace_id'.
+      - type: json_parser
+        parse_from: attributes.json_data
+        parse_to: attributes
+        if: 'attributes["json_data"] != nil' # Run only if regex capture succeeded and created json_data
+
+      # 6. Set Log Body: Handle both JSON and Text Logs
+
+      # 6a. If JSON parsing succeeded, use the JSON's 'message' field (or 'msg') as the body.
+      - type: move
+        from: attributes.message
+        to: body
+        if: 'attributes["message"] != nil' # Use 'message' from JSON if available
+
+      # 6b. Fallback: If 'body' is still empty (i.e., it was a simple text log), use the original raw log.
       - type: move
         from: attributes.log
         to: body
+        if: 'body == nil'
 
-      # 5. Promote Metadata to Resource Attributes (your original move operators)
+      # 7. Clean up intermediate and temporary attributes
+      - type: remove
+        field: attributes.log
+      - type: remove
+        field: attributes.time
+      - type: remove
+        field: attributes.stream
+      - type: remove
+        field: attributes.json_data # Remove the temporary JSON holder attribute
+
+      # 8. Promote Metadata to Resource Attributes (UNCHANGED)
       - type: move
         from: attributes.namespace
         to: resource["k8s.namespace.name"]

@@ -14,7 +14,7 @@ FROM grafana/otel-lgtm:0.12.0
 # ✔️ Overwrite the actual OTEL Collector config used by the container
 #COPY otel/otelcol-config-postgres.yaml /otel-lgtm/otelcol-config.yaml
 
-COPY config/otel/otelcol-config-k8s.yaml /otel-lgtm/otelcol-config.yaml
+#COPY config/otel/otelcol-config-k8s.yaml /otel-lgtm/otelcol-config.yaml
 
 # dashbords custom
 COPY config/grafana/grafana-dashboards.yaml /otel-lgtm/grafana/conf/provisioning/dashboards/grafana-dashboards.yaml

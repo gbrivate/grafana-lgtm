@@ -1,0 +1,252 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otelcol-config
+  namespace: monitoring
+data:
+  otelcol-config.yaml: |
+    # Patched OTEL collector config: removed unsupported `cri_parser` and applied
+    # filelog operators to strip CRI flags (F/P) and parse JSON logs.
+
+    receivers:
+      filelog:
+        include:
+          - /var/log/pods/*/*/*.log
+        #      - /var/lib/postgresql/data/log/*.log
+        exclude: [ "/var/log/pods/*/otc-container/*.log" ]
+        include_file_path: true
+        start_at: beginning
+        max_concurrent_files: 1000
+        poll_interval: 500ms
+        operators:
+          # 1. Extract K8s Metadata (Path Parser)
+          - type: regex_parser
+            regex: '^.*\/((?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9-]+))?\/(?P<container_name>[^._]+)\/(?P<restart_count>\d+)\.log$'
+            parse_from: attributes["log.file.path"]
+            parse_to: attributes
+
+          # 2. Parse the CRI format: TIMESTAMP STREAM FLAG LOG
+          #    Example input: "2025-12-10T21:05:29.241724692Z stderr F {JSON...}"
+          - type: regex_parser
+            id: cri_line
+            regex: '^(?P<time>[^\s]+)\s+(?P<stream>stdout|stderr)\s+(?P<flag>\w+)\s+(?P<log>.*)$'
+            parse_from: body
+            parse_to: attributes
+
+          # 3. Parse timestamp extracted by the previous regex into the record time
+          - type: time_parser
+            layout: '%Y-%m-%dT%H:%M:%S.%fZ'
+            parse_from: attributes.time
+            parse_to: time
+
+
+          # 7. Promote parsed path metadata to resource attributes
+          - type: move
+            from: attributes.namespace
+            to: resource["k8s.namespace.name"]
+          - type: move
+            from: attributes.pod_name
+            to: resource["k8s.pod.name"]
+          - type: move
+            from: attributes.uid
+            to: resource["k8s.pod.uid"]
+          - type: move
+            from: attributes.container_name
+            to: resource["k8s.container.name"]
+
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+            cors:
+              allowed_origins:
+                - http://*
+
+      # kubeletstats: métricas de CPU/memória/rede por Pod e Node
+      kubeletstats:
+        collection_interval: 5s
+        auth_type: serviceAccount
+        endpoint: https://${NODE_NAME}:10250
+        insecure_skip_verify: true
+        metric_groups: [node, pod, container, volume]
+
+      # Scrape do kubelet para métricas adicionais
+      prometheus/kubelet:
+        config:
+          scrape_configs:
+            - job_name: "kubelet"
+              scheme: https
+              scrape_interval: 5s
+              tls_config:
+                insecure_skip_verify: true
+              bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+              static_configs:
+                - targets:
+                    - ${NODE_NAME}:10250
+
+      # Scrape do OTel Collector (self-metrics)
+      prometheus/self:
+        config:
+          scrape_configs:
+            - job_name: "otel-collector"
+              scrape_interval: 5s
+              static_configs:
+                - targets: ["127.0.0.1:8888"]
+
+      # Scrape do kube-state-metrics
+      prometheus/ksm:
+        config:
+          scrape_configs:
+            - job_name: "kube-state-metrics"
+              scrape_interval: 5s
+              static_configs:
+                - targets: ["ksm-kube-state-metrics.kube-system.svc.cluster.local:8080"]
+
+      hostmetrics:
+        collection_interval: 5s
+        scrapers:
+          cpu: {}
+          disk: {}
+          filesystem: {}
+          load: {}
+          memory: {}
+          network: {}
+          paging: {}
+          processes: {}
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      pprof:
+      zpages:
+        endpoint: 0.0.0.0:55679
+
+    processors:
+      # removed unsupported 'cri_parser' processor
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 2048
+        spike_limit_mib: 512
+
+      batch:
+        send_batch_size: 5000
+        timeout: 5s
+
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.namespace.name
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.node.name
+            - k8s.deployment.name
+            - k8s.replicaset.name
+            - k8s.daemonset.name
+            - k8s.statefulset.name
+          labels:
+            - key: app
+            - key: app.kubernetes.io/name
+        pod_association:
+          - sources:
+              - from: resource_attribute
+                name: k8s.pod.ip
+          - sources:
+              - from: resource_attribute
+                name: k8s.pod.uid
+          - sources:
+              - from: connection
+
+      resourcedetection:
+        detectors: [ env, system, docker, kubernetes ]
+
+      transform:
+        metric_statements:
+          - context: datapoint
+            statements:
+              - set(datapoint.attributes["namespace"], resource.attributes["k8s.namespace.name"])
+              - set(datapoint.attributes["pod"], resource.attributes["k8s.pod.name"])
+              - set(datapoint.attributes["deployment"], resource.attributes["k8s.deployment.name"])
+              - set(datapoint.attributes["instance"], resource.attributes["k8s.pod.name"])
+              - set(datapoint.attributes["deployment"], resource.attributes["k8s.replicaset.name"]) where datapoint.attributes["deployment"] == nil
+              - set(datapoint.attributes["deployment"], resource.attributes["k8s.daemonset.name"]) where datapoint.attributes["deployment"] == nil
+              - replace_pattern(datapoint.attributes["deployment"], "-[a-f0-9]+$", "")
+              - set(datapoint.attributes["phase"], resource.attributes["k8s.pod.phase"])
+
+        log_statements:
+          - context: log
+            statements:
+              - set(severity_text, attributes["level"]) where attributes["level"] != nil
+              - set(severity_text, attributes["severity"]) where attributes["severity"] != nil
+
+              - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "info"
+              - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text == "warn" or severity_text == "warning"
+              - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_text == "error"
+              - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "debug"
+
+              - set(body, attributes["msg"]) where attributes["msg"] != nil
+
+              - set(trace_id, attributes["trace_id"]) where attributes["trace_id"] != nil
+              - set(span_id, attributes["span_id"]) where attributes["span_id"] != nil
+
+              - set(attributes["trace_id"], nil)
+              - set(attributes["span_id"], nil)
+
+      attributes/cleanup:
+        actions:
+          - key: log.file.path
+            action: delete
+          - key: logtag
+            action: delete
+
+    exporters:
+      otlphttp/metrics:
+        endpoint: http://127.0.0.1:9090/api/v1/otlp
+        tls:
+          insecure: true
+
+      prometheusremotewrite:
+        endpoint: http://127.0.0.1:9090/api/v1/write
+        tls:
+          insecure: true
+
+      otlphttp/traces:
+        endpoint: http://127.0.0.1:4418
+        tls:
+          insecure: true
+
+      otlphttp/logs:
+        endpoint: http://127.0.0.1:3100/otlp
+        tls:
+          insecure: true
+
+      otlp/profiles:
+        endpoint: http://127.0.0.1:4040
+        tls:
+          insecure: true
+
+    service:
+      extensions: [health_check]
+      pipelines:
+        metrics:
+          receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm]
+          processors: [memory_limiter, k8sattributes, batch]
+          exporters: [otlphttp/metrics, prometheusremotewrite]
+
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, batch]
+          exporters: [otlphttp/traces]
+
+        logs:
+          receivers: [otlp, filelog]
+          # note: removed 'cri_parser' from processors list; filelog operators handle CRI parsing
+          processors: [memory_limiter, k8sattributes, transform, batch, attributes/cleanup]
+          exporters: [otlphttp/logs]
+
+        profiles:
+          receivers: [otlp]
+          exporters: [otlp/profiles]

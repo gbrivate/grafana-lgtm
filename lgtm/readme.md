@@ -28,6 +28,12 @@ kind load docker-image lgtm:1.0
 kubectl apply -f k8s.yaml
 kubectl logs -n monitoring deployments/grafana-deployment -f | grep "Error:"
 
+clear
+kubectl delete -n monitoring deployments.apps grafana-deployment
+kubectl apply -f config-map.yaml
+kubectl apply -f k8s.yaml
+kubectl logs -n monitoring deployments/grafana-deployment -f 
+
 
 clear
 docker container stop grafana

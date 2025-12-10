@@ -48,7 +48,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: ENABLE_LOGS_ALL
-              value: "false"
+              value: "true"
             - name: GF_SERVER_ROOT_URL
               value: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
@@ -62,6 +62,9 @@ spec:
             - name: K8S_CLUSTER_NAME
               value: "kind"  # Set your cluster name
           volumeMounts:
+            - name: otelcol-config
+              mountPath: /otel-lgtm/otelcol-config.yaml
+              subPath: otelcol-config.yaml
             - name: varlogpods
               mountPath: /var/log/pods
               readOnly: true
@@ -76,6 +79,9 @@ spec:
         - name: varlibdockercontainers # Sometimes needed for symlinks
           hostPath:
             path: /var/lib/docker/containers
+        - name: otelcol-config
+          configMap:
+            name: otelcol-config
 
 ---
 apiVersion: v1
@@ -158,4 +164,3 @@ subjects:
   - kind: ServiceAccount
     name: lgtm-sa
     namespace: monitoring
-
