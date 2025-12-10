@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 httpx[http2]
+python-json-logger
 
 # --- OpenTelemetry Auto Instrumentation ---
 opentelemetry-distro
@@ -11,3 +12,4 @@ opentelemetry-instrumentation-aiohttp-client
 opentelemetry-instrumentation-requests
 opentelemetry-instrumentation-httpx
 opentelemetry-instrumentation-grpc
+opentelemetry-instrumentation-logging

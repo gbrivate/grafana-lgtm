@@ -182,6 +182,18 @@ processors:
           # Promove JSON field "msg" se existir
           - set(body, attributes["msg"]) where attributes["msg"] != nil
 
+          # NEW: Extract Trace ID and Span ID from the JSON attributes (created by json_parser)
+          # Map 'trace_id' from the log to the LogRecord's TraceID field
+          - set(trace_id, attributes["trace_id"]) where attributes["trace_id"] != nil
+
+          # Map 'span_id' from the log to the LogRecord's SpanID field
+          - set(span_id, attributes["span_id"]) where attributes["span_id"] != nil
+
+          # Clean up the original attributes
+          - delete(attributes["trace_id"])
+          - delete(attributes["span_id"])
+
+
   attributes/cleanup:
     actions:
       - key: log.file.path
