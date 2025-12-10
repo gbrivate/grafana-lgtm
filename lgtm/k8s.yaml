@@ -47,6 +47,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: ENABLE_LOGS_ALL
+              value: "true"
             - name: GF_SERVER_ROOT_URL
               value: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
@@ -59,6 +61,21 @@ spec:
                   fieldPath: spec.nodeName
             - name: K8S_CLUSTER_NAME
               value: "kind"  # Set your cluster name
+          volumeMounts:
+            - name: varlogpods
+              mountPath: /var/log/pods
+              readOnly: true
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+      # In your Pod/Deployment/DaemonSet spec
+      volumes:
+        - name: varlogpods
+          hostPath:
+            path: /var/log/pods
+        - name: varlibdockercontainers # Sometimes needed for symlinks
+          hostPath:
+            path: /var/lib/docker/containers
 
 ---
 apiVersion: v1

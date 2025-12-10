@@ -8,6 +8,7 @@ kubectl rollout restart -n monitoring deployment grafana-deployment
 kubectl port-forward -n monitoring svc/grafana-service 3000:3000 9090:9090
 
 kubectl create namespace monitoring
+kubectl delete -n monitoring deployments.apps grafana-deployment
 docker build --no-cache --tag lgtm:1.0 .
 kind load docker-image lgtm:1.0
 kubectl apply -f k8s.yaml
@@ -20,8 +21,12 @@ kubectl apply -f k8s.yaml
 kubectl logs -n monitoring deployments/grafana-deployment -f
 kubectl get pods -n monitoring
 
-kubectl rollout restart -n monitoring deployment grafana-deployment
-kubectl logs -n monitoring deployments/grafana-deployment -f
+clear
+kubectl delete -n monitoring deployments.apps grafana-deployment
+docker build --no-cache --tag lgtm:1.0 .
+kind load docker-image lgtm:1.0
+kubectl apply -f k8s.yaml
+kubectl logs -n monitoring deployments/grafana-deployment -f | grep "Error:"
 
 
 clear

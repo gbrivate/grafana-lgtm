@@ -1,0 +1,86 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1627382912345,
+  "links": [],
+  "panels": [
+    {
+      "title": "Deployments",
+      "gridPos": {"h": 3, "w": 4, "x": 12, "y": 1},
+      "targets": [{"expr": "count(kube_deployment_created)", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cluster CPU Usage (cores)",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {"expr": "sum(k8s_node_cpu_usage) by (instance)", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cluster Memory Usage (bytes)",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {"expr": "sum(k8s_node_memory_usage_bytes) by (instance)", "refId": "A"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Pod Restarts (last 24h)",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 10},
+      "targets": [
+        {"expr": "increase(kube_pod_container_status_restarts_total[24h])", "refId": "A"}
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top 10 Pods by CPU",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 10},
+      "targets": [
+        {"expr": "topk(10, sum by(pod, namespace)(rate(container_cpu_usage[5m])))", "refId": "A"}
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": ["kubernetes","cluster","overview"],
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "cluster",
+        "label": "Cluster",
+        "hide": 0,
+        "query": "label_values(kube_node_info, cluster)",
+        "datasource": "Prometheus"
+      },
+      {
+        "type": "query",
+        "name": "namespace",
+        "label": "Namespace",
+        "hide": 0,
+        "query": "label_values(kube_namespace_created, namespace)",
+        "datasource": "Prometheus",
+        "refresh": 2
+      },
+      {
+        "type": "query",
+        "name": "node",
+        "label": "Node",
+        "hide": 0,
+        "query": "label_values(kube_node_info, node)",
+        "datasource": "Prometheus",
+        "refresh": 2
+      }
+    ]
+  },
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "K8s — Cluster Overview (Dynamic Filters)",
+  "uid": "k8s-cluster-overview"
+}

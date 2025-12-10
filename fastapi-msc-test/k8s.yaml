@@ -30,7 +30,6 @@ spec:
             limits:
               memory: 2048Mi
               cpu: 1000m
-              
 ---
 apiVersion: v1
 kind: Service

@@ -2,46 +2,72 @@ receivers:
   filelog:
     include:
       - /var/log/pods/*/*/*.log
-#      - /var/lib/postgresql/data/log/*.log
-    exclude: [ "/var/log/pods/*/otc-container/*.log" ]
+    exclude:
+      - /var/log/pods/*/otc-container/*.log
+
     include_file_path: true
     start_at: beginning
     max_concurrent_files: 1000
     poll_interval: 500ms
+
     operators:
-      # 1. FIX: Extract K8s Metadata (Namespace, Pod Name, UID, etc.) from the file path.
+      # 1. Extrai namespace/pod/container da estrutura K8s
       - type: regex_parser
-        regex: '^.*\/((?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9-]+))?\/(?P<container_name>[^._]+)\/(?P<restart_count>\d+)\.log$'
         parse_from: attributes["log.file.path"]
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9-]+)\/(?P<container_name>[^\/]+)\/(?P<restart_count>\d+)\.log$'
 
-      # 2. FIX: Parse the log line content (Timestamp, Stream, and Log Message)
+      # 2. Parse CRI log format (stdout/stderr + timestamp + msg)
       - type: regex_parser
-        regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<log>.*)$' # Creates attributes: time, stream, log
+        regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
 
-      # 3. FIX: Parse the timestamp from the *newly created* attributes.time field
-      - type: time_parser
-        layout: '%Y-%m-%dT%H:%M:%S.%fZ'
-        parse_from: attributes.time # Reads attribute.time (created in step 2)
-        parse_to: time              # Writes the final timestamp to the LogRecord time field
+      # 3. Se o conteúdo for JSON → parse de JSON estruturado
+      - type: json_parser
+        parse_from: attributes.log
+        if: 'attributes.log != nil'
 
-      # 4. Promote log content to body and clean up attributes
+      # 4. Normaliza container_name removendo sufixos de runtime
+      - type: regex_parser
+        parse_from: attributes.container_name
+        regex: '^(?P<container_name>[^._]+)'
+        if: 'attributes.container_name != nil'
+
+      # 5. Mapeia CRI timestamp para body.time se existir
       - type: move
-        from: attributes.log
-        to: body
+        from: attributes.time
+        to: attributes["cri.time"]
+        if: 'attributes.time != nil'
 
-      # 5. Promote Metadata to Resource Attributes (your original move operators)
+      # 6. Promove namespace/pod/container para resource attributes
       - type: move
         from: attributes.namespace
         to: resource["k8s.namespace.name"]
+        if: 'attributes.namespace != nil'
+
       - type: move
         from: attributes.pod_name
         to: resource["k8s.pod.name"]
-      - type: move
-        from: attributes.uid
-        to: resource["k8s.pod.uid"]
+        if: 'attributes.pod_name != nil'
+
       - type: move
         from: attributes.container_name
         to: resource["k8s.container.name"]
+        if: 'attributes.container_name != nil'
+
+      - type: move
+        from: attributes.uid
+        to: resource["k8s.pod.uid"]
+        if: 'attributes.uid != nil'
+
+      # 7. Remove ruído
+      - type: remove
+        field: attributes.logtag
+        if: 'attributes.logtag != nil'
+
+      - type: remove
+        field: attributes["log.file.path"]
 
   otlp:
     protocols:
@@ -49,68 +75,51 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-        cors:
-          allowed_origins:
-            - http://*
 
-  # kubeletstats: métricas de CPU/memória/rede por Pod e Node
   kubeletstats:
-    collection_interval: 5s
+    collection_interval: 10s
     auth_type: serviceAccount
     endpoint: https://${NODE_NAME}:10250
     insecure_skip_verify: true
     metric_groups: [node, pod, container, volume]
 
-  # Scrape do kubelet para métricas adicionais
   prometheus/kubelet:
     config:
       scrape_configs:
         - job_name: "kubelet"
           scheme: https
-          scrape_interval: 5s
+          scrape_interval: 10s
           tls_config:
             insecure_skip_verify: true
           bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
           static_configs:
-            - targets:
-                - ${NODE_NAME}:10250
+            - targets: ["${NODE_NAME}:10250"]
 
-  # Scrape do OTel Collector (self-metrics)
-  prometheus/self:
-    config:
-      scrape_configs:
-        - job_name: "otel-collector"
-          scrape_interval: 5s
-          static_configs:
-            - targets: ["127.0.0.1:8888"]
-
-  # Scrape do kube-state-metrics
   prometheus/ksm:
     config:
       scrape_configs:
         - job_name: "kube-state-metrics"
-          scrape_interval: 5s
+          scrape_interval: 15s
           static_configs:
             - targets: ["ksm-kube-state-metrics.kube-system.svc.cluster.local:8080"]
 
+  prometheus/self:
+    config:
+      scrape_configs:
+        - job_name: otel-collector
+          static_configs:
+            - targets: ["127.0.0.1:8888"]
+
   hostmetrics:
-    collection_interval: 5s
     scrapers:
       cpu: {}
-      disk: {}
-      filesystem: {}
-      load: {}
       memory: {}
+      filesystem: {}
       network: {}
-      paging: {}
+      load: {}
       processes: {}
+      paging: {}
 
-extensions:
-  health_check:
-    endpoint: 0.0.0.0:13133
-  pprof:
-  zpages:
-    endpoint: 0.0.0.0:55679
 
 processors:
   memory_limiter:
@@ -133,8 +142,6 @@ processors:
         - k8s.node.name
         - k8s.deployment.name
         - k8s.replicaset.name
-        - k8s.daemonset.name
-        - k8s.statefulset.name
       labels:
         - key: app
         - key: app.kubernetes.io/name
@@ -148,15 +155,10 @@ processors:
       - sources:
           - from: connection
 
-  resourcedetection:
-    detectors: [ env, system, docker, kubernetes ]
-
   transform:
     metric_statements:
       - context: datapoint
         statements:
-          # FIXED: Uses 'datapoint.attributes' (v0.139+ requirement)
-          # Namespace
           - set(datapoint.attributes["namespace"], resource.attributes["k8s.namespace.name"])
           - set(datapoint.attributes["pod"], resource.attributes["k8s.pod.name"])
           - set(datapoint.attributes["deployment"], resource.attributes["k8s.deployment.name"])
@@ -170,17 +172,15 @@ processors:
       - context: log
         statements:
           # Normaliza severidade
-          - set(severity_text, attributes["level"]) where attributes["level"] != nil
-          - set(severity_text, attributes["severity"]) where attributes["severity"] != nil
-
-          # Fix: Use 'or' instead of list brackets []
+          - set(severity_text, attributes.level) where attributes.level != nil
+          - set(severity_text, attributes.severity) where attributes.severity != nil
           - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "info"
-          - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text == "warn" or severity_text == "warning"
+          - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text in ["warn", "warning"]
           - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_text == "error"
           - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "debug"
 
           # Promove JSON field "msg" se existir
-          - set(body, attributes["msg"]) where attributes["msg"] != nil
+          - set(body, attributes.msg) where attributes.msg != nil
 
   attributes/cleanup:
     actions:
@@ -189,14 +189,15 @@ processors:
       - key: logtag
         action: delete
 
+
 exporters:
-  otlphttp/metrics:
-    endpoint: http://127.0.0.1:9090/api/v1/otlp
+  otlphttp/logs:
+    endpoint: http://127.0.0.1:3100/otlp
     tls:
       insecure: true
 
-  prometheusremotewrite:
-    endpoint: http://127.0.0.1:9090/api/v1/write
+  otlphttp/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
     tls:
       insecure: true
 
@@ -205,8 +206,8 @@ exporters:
     tls:
       insecure: true
 
-  otlphttp/logs:
-    endpoint: http://127.0.0.1:3100/otlp
+  prometheusremotewrite:
+    endpoint: http://127.0.0.1:9090/api/v1/write
     tls:
       insecure: true
 
@@ -215,12 +216,26 @@ exporters:
     tls:
       insecure: true
 
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+
 service:
   extensions: [health_check]
   pipelines:
+    logs:
+      receivers: [filelog, otlp]
+      processors: [memory_limiter, k8sattributes, attributes/cleanup, batch]
+      exporters: [otlphttp/logs]
+
     metrics:
-      receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm]
-      processors: [memory_limiter, k8sattributes, batch]
+      receivers: [otlp, kubeletstats, prometheus/kubelet, prometheus/ksm, prometheus/self]
+      processors: [memory_limiter, k8sattributes, transform, batch]
       exporters: [otlphttp/metrics, prometheusremotewrite]
 
     traces:
@@ -228,11 +243,7 @@ service:
       processors: [memory_limiter, k8sattributes, batch]
       exporters: [otlphttp/traces]
 
-    logs:
-      receivers: [otlp, filelog]
-      processors: [memory_limiter, k8sattributes, transform, batch]
-      exporters: [otlphttp/logs]
-
     profiles:
       receivers: [otlp]
+      processors: []
       exporters: [otlp/profiles]

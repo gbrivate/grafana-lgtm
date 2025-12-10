@@ -7,9 +7,15 @@ kubectl port-forward svc/fastapi-msc-test-service 8002:8002 -n applications
 
 docker run -p 8002:8002 fastapi-msc-test:latest
 
+
+
+
+clear
+kubectl delete -n applications deployments.apps fastapi-msc-test-deployment
 docker build --tag fastapi-msc-test:latest .
 kind load docker-image fastapi-msc-test
 kubectl apply -f k8s.yaml
+kubectl logs -n applications deployments/fastapi-msc-test-deployment -f
 
 
 docker container stop fastapi
