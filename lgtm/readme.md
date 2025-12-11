@@ -50,3 +50,21 @@ docker run -p 3000:3000 -p 4317:4317 -p 4318:4318 -p 4040:4040 -p 9090:9090  \
 
 {status=error} | rate() by (resource.service.name)
 
+#overwriting files
+# Optional: copy custom Grafana dashboards or configuration
+
+#COPY grafana/defaults.ini  /otel-lgtm/grafana/conf/defaults.ini
+#COPY prometheus/prometheus-original.yml /otel-lgtm/prometheus/prometheus.yml
+#COPY prometheus/prometheus.yaml /otel-lgtm/prometheus.yaml
+# COPY otel/otel-config-postgres.yaml /otel-lgtm/otel-config.yaml
+#COPY otel/otelcol-config-export-http.yaml /otel-lgtm/otelcol-config-export-http.yaml
+
+#COPY loki/loki-config.yaml /otel-lgtm/loki-config.yaml
+#COPY tempo/tempo-config.yaml /otel-lgtm/tempo-config.yaml
+
+# ✔️ Overwrite the actual OTEL Collector config used by the container
+#COPY otel/otelcol-config-postgres.yaml /otel-lgtm/otelcol-config.yaml
+
+#COPY config/otel/otelcol-config-k8s.yaml /otel-lgtm/otelcol-config.yaml
+
+

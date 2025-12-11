@@ -1,3 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -43,24 +48,33 @@ spec:
               memory: 2048Mi
               cpu: 1000m
           env:
+            # --- K8s instrumentation ---
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: ENABLE_LOGS_ALL
-              value: "true"
-            - name: GF_SERVER_ROOT_URL
-              value: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
-            - name: GF_SERVER_SERVE_FROM_SUB_PATH
-              value: "true"
-            - name: GF_SERVER_HTTP_ADDR
-              value: "0.0.0.0"
             - name: K8S_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: K8S_CLUSTER_NAME
               value: "kind"  # Set your cluster name
+
+            # --- Grafana: Server settings (necessary to access via ingress controller ---
+            - name: GF_SERVER_HTTP_ADDR
+              value: "0.0.0.0"
+            - name: GF_SERVER_ROOT_URL
+              value: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
+            # --- Enable / disable stack logs ---
+            - name: ENABLE_LOGS_ALL
+              value: "true"   # Your latest value overrides previous "true"
+            # --- Disable noisy Grafana logs ---
+            - name: GF_LOG_MODE
+              value: "console"
+            - name: GF_LOG_FILTERS
+              value: "rendering:info"
           volumeMounts:
             - name: otelcol-config
               mountPath: /otel-lgtm/otelcol-config.yaml

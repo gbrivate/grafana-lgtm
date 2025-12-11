@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 # ⚠️ Use a secure way to manage your credentials (e.g., environment variables)
 # DO NOT hardcode sensitive data.
 #SQLALCHEMY_DATABASE_URL = "postgresql://myuser:mypassword@postgres-service.corban.svc.cluster.local:5432/mydb"
-SQLALCHEMY_DATABASE_URL = "postgresql://myuser:mypassword@postgres-service.applications.svc.cluster.local:5432/mydb"
+SQLALCHEMY_DATABASE_URL = "postgresql://myuser:mypassword@postgres-service.datastore.svc.cluster.local:5432/mydb"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL

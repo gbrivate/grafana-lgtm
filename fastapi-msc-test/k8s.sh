@@ -4,4 +4,5 @@ kubectl delete -n applications deployments.apps fastapi-msc-test-deployment
 docker build --tag fastapi-msc-test:latest .
 kind load docker-image fastapi-msc-test
 kubectl apply -f k8s.yaml
-kubectl logs deployments/fastapi-msc-db-deployment -n applications -f
+sleep 5
+kubectl logs deployments/ fastapi-msc-test:latest -n applications -f

@@ -1,4 +1,9 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: otelcol-config
@@ -12,7 +17,7 @@ data:
       filelog:
         include:
           - /var/log/pods/*/*/*.log
-        #      - /var/lib/postgresql/data/log/*.log
+          - /var/lib/postgresql/data/log/*.log
         exclude: [ "/var/log/pods/*/otc-container/*.log" ]
         include_file_path: true
         start_at: beginning
@@ -88,12 +93,12 @@ data:
       # PostgreSQL Metrics Receiver
       # -------------------------------
       postgresql:
-        endpoint: postgres-service.applications.svc.cluster.local:5432 # using k8s change for postgres-service.{namespace}.svc.cluster.local:5432
+        endpoint: postgres-service.datastore.svc.cluster.local:5432 # using k8s change for postgres-service.{namespace}.svc.cluster.local:5432
         username: myuser
         password: mypassword
         databases:
           - mydb
-        collection_interval: 10s
+        collection_interval: 5s
         tls:
           insecure: true
 
@@ -108,8 +113,8 @@ data:
       # removed unsupported 'cri_parser' processor
       memory_limiter:
         check_interval: 1s
-        limit_mib: 2048
-        spike_limit_mib: 512
+        limit_mib: 4000
+        spike_limit_mib: 800
 
       batch:
         send_batch_size: 5000
@@ -193,7 +198,14 @@ data:
         endpoint: http://127.0.0.1:9090/api/v1/write
         tls:
           insecure: true
-
+        remote_write_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 10000
+        wal:
+          truncate_frequency: 10s
+          lag_record_frequency: 5s
+      
       otlphttp/traces:
         endpoint: http://127.0.0.1:4418
         tls:

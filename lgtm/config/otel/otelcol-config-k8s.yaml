@@ -2,81 +2,15 @@ receivers:
   filelog:
     include:
       - /var/log/pods/*/*/*.log
-#      - /var/lib/postgresql/data/log/*.log
+    #      - /var/lib/postgresql/data/log/*.log
     exclude: [ "/var/log/pods/*/otc-container/*.log" ]
     include_file_path: true
     start_at: beginning
     max_concurrent_files: 1000
     poll_interval: 500ms
     operators:
-      # 1. Extract K8s Metadata (Path Parser)
-      - type: regex_parser
-        regex: '^.*\/((?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9-]+))?\/(?P<container_name>[^._]+)\/(?P<restart_count>\d+)\.log$'
-        parse_from: attributes["log.file.path"]
-
-      # 2. Parse the CRI format: Extract TIMESTAMP, STREAM, and RAW LOG CONTENT
-      - type: regex_parser
-        regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<log>.*)$' # 'log' now holds: "F {JSON...}"
-
-      # 3. Time Parser (UNCHANGED)
-      - type: time_parser
-        layout: '%Y-%m-%dT%H:%M:%S.%fZ'
-        parse_from: attributes.time
-        parse_to: time
-
-      # 4. JSON Parsing Attempt - FIXED
-      # Changed '{.*}' to '{.*?}' to make the capture non-greedy.
-      - type: regex_parser
-        name: capture_json_if_present_and_clean
-        regex: '^(?:F\s+)?\s*(?P<json_data>\{.*?\})\s*(?P<log>.*)$'
-        parse_from: attributes.log
-        parse_to: attributes
-
-      # 5. Conditional JSON Parsing
-      # This operator *only runs* if 'json_data' was successfully created by the regex above.
-      # If 'json_data' is present, this step parses the JSON, promoting fields like 'trace_id'.
-      - type: json_parser
-        parse_from: attributes.json_data
-        parse_to: attributes
-        if: 'attributes["json_data"] != nil' # Run only if regex capture succeeded and created json_data
-
-      # 6. Set Log Body: Handle both JSON and Text Logs
-
-      # 6a. If JSON parsing succeeded, use the JSON's 'message' field (or 'msg') as the body.
-      - type: move
-        from: attributes.message
-        to: body
-        if: 'attributes["message"] != nil' # Use 'message' from JSON if available
-
-      # 6b. Fallback: If 'body' is still empty (i.e., it was a simple text log), use the original raw log.
-      - type: move
-        from: attributes.log
-        to: body
-        if: 'body == nil'
-
-      # 7. Clean up intermediate and temporary attributes
-      - type: remove
-        field: attributes.log
-      - type: remove
-        field: attributes.time
-      - type: remove
-        field: attributes.stream
-      - type: remove
-        field: attributes.json_data # Remove the temporary JSON holder attribute
-
-      # 8. Promote Metadata to Resource Attributes (UNCHANGED)
-      - type: move
-        from: attributes.namespace
-        to: resource["k8s.namespace.name"]
-      - type: move
-        from: attributes.pod_name
-        to: resource["k8s.pod.name"]
-      - type: move
-        from: attributes.uid
-        to: resource["k8s.pod.uid"]
-      - type: move
-        from: attributes.container_name
-        to: resource["k8s.container.name"]
+      - id: container-parser
+        type: container
 
   otlp:
     protocols:

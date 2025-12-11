@@ -37,9 +37,6 @@ class OTelJsonFormatter(jsonlogger.JsonFormatter):
             log_data['trace_id'] = '00000000000000000000000000000000'
             log_data['span_id'] = '0000000000000000'
 
-# ---------------------------------------------
-
-
 # ----------------------------------------------------
 # Global Logging Configuration (JSON Format)
 # ----------------------------------------------------
@@ -52,23 +49,11 @@ formatter = OTelJsonFormatter(
     reserved_attrs=['message', 'levelname', 'name', 'asctime', 'pathname', 'lineno', 'funcName']
 )
 handler.setFormatter(formatter)
-
-# 2. Configure the root logger
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
-
-# Clear existing handlers to avoid duplicates
-if root_logger.hasHandlers():
-    root_logger.handlers.clear()
-root_logger.addHandler(handler)
-
-# 3. Application-specific logger
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 if logger.hasHandlers():
     logger.handlers.clear()
 logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-
 # ----------------------------------------------------
 # App Initialization
 # ----------------------------------------------------
@@ -115,7 +100,7 @@ async def roll_dice(player: str | None = Query(default=None)):
 @app.get("/hello")
 async def hello(name: str):
     if name == "test":
-        logger.warning("Not ok path taken", extra={"input_name": name})
+        logger.warning("Not ok", extra={"input_name": name})
         return {"Not hello": name}
 
     logger.info("Successfully greeted user", extra={"input_name": name})

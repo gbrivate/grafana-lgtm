@@ -25,24 +25,6 @@ scrape_configs:
         labels:
           app: "prometheus"
 
-  - job_name: "kafka"
-    honor_labels: true
-    metrics_path: /metrics
-    scrape_interval: 2s
-    static_configs:
-      - targets:
-          - 'kafka-service.default.svc.cluster.local:7071'
-    metric_relabel_configs:
-      - action: labeldrop
-        regex: 'instance|job'
-
-  - job_name: "kube-state-metrics"
-    honor_labels: true
-    metrics_path: /metrics
-    scrape_interval: 2s
-    static_configs:
-      - targets: [ "ksm-kube-state-metrics.kube-system.svc.cluster.local:8080" ]
-
 query:
   lookback_delta: 5m
   max_concurrent: 100
