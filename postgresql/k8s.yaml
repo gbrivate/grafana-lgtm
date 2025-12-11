@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:latest
+          image: postgres:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: postgres

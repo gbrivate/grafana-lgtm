@@ -114,6 +114,19 @@ data:
           network: {}
           paging: {}
           processes: {}
+          
+      # -------------------------------
+      # PostgreSQL Metrics Receiver
+      # -------------------------------
+      postgresql:
+        endpoint: postgres-service.applications.svc.cluster.local:5432 # using k8s change for postgres-service.{namespace}.svc.cluster.local:5432
+        username: myuser
+        password: mypassword
+        databases:
+          - mydb
+        collection_interval: 10s
+        tls:
+          insecure: true
 
     extensions:
       health_check:
@@ -231,7 +244,7 @@ data:
       extensions: [health_check]
       pipelines:
         metrics:
-          receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm]
+          receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm, postgresql]
           processors: [memory_limiter, k8sattributes, batch]
           exporters: [otlphttp/metrics, prometheusremotewrite]
 

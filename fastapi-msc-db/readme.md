@@ -1,6 +1,6 @@
 ## Docker
 docker build --no-cache  --tag fastapi-msc-db:1.0 .
-kind load docker-image fastapi-msc-db 
+kind load docker-image fastapi-msc-db:1.0 
 kubectl rollout restart deployment fastapi-msc-db-deployment -n applications
 kubectl port-forward svc/fastapi-msc-db-service 8002:8002 -n applications
 
@@ -18,7 +18,7 @@ docker run --add-host=host.docker.internal:host-gateway \
 
 
 docker build --tag fastapi-msc-db:1.0 .
-kind load docker-image fastapi-msc-db
+kind load docker-image fastapi-msc-db:1.0
 kubectl apply -f k8s.yaml
 kubectl get pods -n applications
 

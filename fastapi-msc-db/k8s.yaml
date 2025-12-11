@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: fastapi-msc-db
-          image: fastapi-msc-db:latest
+          image: fastapi-msc-db:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001

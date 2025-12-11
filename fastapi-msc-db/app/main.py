@@ -6,16 +6,9 @@ from database import SessionLocal, engine, get_db
 
 import logging
 
-# STDOUT handler (so logs appear in console / docker logs)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s"))
 
 # Configure root logger
-logging.basicConfig(
-    level=logging.INFO,
-    handlers=[console_handler],  # 👈 both handlers
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create the database tables defined in models.py

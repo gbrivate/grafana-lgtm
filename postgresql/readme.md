@@ -1,6 +1,6 @@
 # build image
 docker build --no-cache -t postgres:1.0 .
-kind load docker-image postgres:latest
+kind load docker-image postgres:1.0
 kubectl rollout restart deployment postgres-deployment -n applications
 
 kubectl apply -f k8s.yaml

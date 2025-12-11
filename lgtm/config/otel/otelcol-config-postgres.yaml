@@ -21,7 +21,7 @@ receivers:
   # PostgreSQL Metrics Receiver
   # -------------------------------
   postgresql:
-    endpoint: postgres:5432
+    endpoint: postgres:5432 # using k8s change for postgres-service.{namespace}.svc.cluster.local:5432
     username: myuser
     password: mypassword
     databases:
