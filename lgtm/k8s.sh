@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+clear
 
 NAMESPACE="monitoring"
 DEPLOYMENT="grafana-deployment"
@@ -32,6 +33,8 @@ kubectl apply -f config-map.yaml
 
 echo "Applying Deployment..."
 kubectl apply -f k8s.yaml
+
+sleep 5
 
 echo "Tailing logs..."
 kubectl logs -n "$NAMESPACE" deployment/"$DEPLOYMENT" -f

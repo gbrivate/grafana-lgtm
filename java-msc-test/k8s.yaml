@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: java-msc-test
-          image: java-msc-test:latest
+          image: java-msc-test:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

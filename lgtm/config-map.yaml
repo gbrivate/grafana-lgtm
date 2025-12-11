@@ -19,39 +19,8 @@ data:
         max_concurrent_files: 1000
         poll_interval: 500ms
         operators:
-          # 1. Extract K8s Metadata (Path Parser)
-          - type: regex_parser
-            regex: '^.*\/((?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9-]+))?\/(?P<container_name>[^._]+)\/(?P<restart_count>\d+)\.log$'
-            parse_from: attributes["log.file.path"]
-            parse_to: attributes
-
-          # 2. Parse the CRI format: TIMESTAMP STREAM FLAG LOG
-          #    Example input: "2025-12-10T21:05:29.241724692Z stderr F {JSON...}"
-          - type: regex_parser
-            id: cri_line
-            regex: '^(?P<time>\S+)\s+(?P<stream>stdout|stderr)\s+\S+\s+(?P<log>.*)$'
-            parse_from: body
-            parse_to: attributes
-
-          # 3. Parse timestamp extracted by the previous regex into the record time
-          - type: time_parser
-            layout: '%Y-%m-%dT%H:%M:%S.%fZ'
-            parse_from: attributes.time
-            parse_to: time         
-                
-          # 7. Promote parsed path metadata to resource attributes
-          - type: move
-            from: attributes.namespace
-            to: resource["k8s.namespace.name"]
-          - type: move
-            from: attributes.pod_name
-            to: resource["k8s.pod.name"]
-          - type: move
-            from: attributes.uid
-            to: resource["k8s.pod.uid"]
-          - type: move
-            from: attributes.container_name
-            to: resource["k8s.container.name"]
+          - id: container-parser
+            type: container
 
       otlp:
         protocols:
@@ -244,7 +213,7 @@ data:
       extensions: [health_check]
       pipelines:
         metrics:
-          receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm, postgresql]
+          receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm, postgresql, hostmetrics]
           processors: [memory_limiter, k8sattributes, batch]
           exporters: [otlphttp/metrics, prometheusremotewrite]
 

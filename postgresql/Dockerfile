@@ -6,7 +6,8 @@ ARG OTEL_EXPORTER_OTLP_ENDPOINT="http://grafana-service.monitoring.svc.cluster.l
 # Define variáveis (não coloque senhas fixas em produção)
 ENV POSTGRES_USER=myuser \
     POSTGRES_PASSWORD=mypassword \
-    POSTGRES_DB=mydb
+    POSTGRES_DB=mydb \
+    TZ=America/Sao_Paulo
 
 COPY config/postgresql.conf.sample /usr/local/share/postgresql/postgresql.conf.sample
 
