@@ -28,10 +28,11 @@ kind load docker-image lgtm:1.0
 kubectl apply -f k8s.yaml
 kubectl logs -n monitoring deployments/grafana-deployment -f | grep "Error:"
 
-clear
+clear 
 kubectl delete -n monitoring deployments.apps grafana-deployment
-kubectl apply -f config-map.yaml
-kubectl apply -f k8s.yaml
+kubectl get pods -n monitoring  => here I wanna wait for the pod being termianed
+kubectl apply -f config-map.yaml 
+kubectl apply -f k8s.yaml 
 kubectl logs -n monitoring deployments/grafana-deployment -f 
 
 

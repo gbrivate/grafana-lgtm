@@ -11,6 +11,7 @@ docker run -p 8002:8002 fastapi-msc-test:latest
 
 
 clear
+docker image remove fastapi-msc-test:latest 
 kubectl delete -n applications deployments.apps fastapi-msc-test-deployment
 docker build --tag fastapi-msc-test:latest .
 kind load docker-image fastapi-msc-test
