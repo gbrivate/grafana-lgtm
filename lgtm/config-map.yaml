@@ -88,7 +88,7 @@ data:
           network: {}
           paging: {}
           processes: {}
-          
+
       # -------------------------------
       # PostgreSQL Metrics Receiver
       # -------------------------------
@@ -114,10 +114,11 @@ data:
       memory_limiter:
         check_interval: 1s
         limit_mib: 4000
-        spike_limit_mib: 800
+        spike_limit_mib: 512
 
+      # reduced batch size to lower window-risk for duplicated timestamps
       batch:
-        send_batch_size: 5000
+        send_batch_size: 500
         timeout: 5s
 
       k8sattributes:
@@ -193,19 +194,19 @@ data:
         endpoint: http://127.0.0.1:9090/api/v1/otlp
         tls:
           insecure: true
-
+        sending_queue:
+          queue_size: 10000
+          
       prometheusremotewrite:
         endpoint: http://127.0.0.1:9090/api/v1/write
         tls:
           insecure: true
+        timeout: 30s
         remote_write_queue:
-          enabled: true
+          enabled: true    
           num_consumers: 10
           queue_size: 10000
-        wal:
-          truncate_frequency: 10s
-          lag_record_frequency: 5s
-      
+
       otlphttp/traces:
         endpoint: http://127.0.0.1:4418
         tls:
@@ -226,7 +227,8 @@ data:
       pipelines:
         metrics:
           receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm, postgresql, hostmetrics]
-          processors: [memory_limiter, k8sattributes, batch]
+          # include transform so metric normalization rules are applied
+          processors: [memory_limiter, k8sattributes, transform, batch]
           exporters: [otlphttp/metrics, prometheusremotewrite]
 
         traces:

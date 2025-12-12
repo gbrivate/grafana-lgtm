@@ -25,7 +25,7 @@ while true; do
 
     echo "Still waiting for pod termination..."
     echo "$PODS"
-    sleep 2
+    sleep 5
 done
 
 echo "Applying ConfigMap..."

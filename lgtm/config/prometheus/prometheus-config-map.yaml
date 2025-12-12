@@ -17,6 +17,7 @@ data:
 
       - job_name: 'kafka'
         honor_labels: true
+        0.
         metrics_path: /metrics
         static_configs:
           - targets:

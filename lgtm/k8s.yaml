@@ -67,9 +67,11 @@ spec:
               value: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
               value: "true"
+            - name: GF_SERVER_ENABLE_GZIP
+              value: "true"
             # --- Enable / disable stack logs ---
             - name: ENABLE_LOGS_ALL
-              value: "true"   # Your latest value overrides previous "true"
+              value: "false"   # Your latest value overrides previous "true"
             # --- Disable noisy Grafana logs ---
             - name: GF_LOG_MODE
               value: "console"
@@ -126,6 +128,15 @@ kind: Ingress
 metadata:
   name: grafana-ingress
   namespace: monitoring
+#  annotations:
+#    nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
+#    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+#    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+#    nginx.ingress.kubernetes.io/configuration-snippet: |
+#      proxy_set_header Host $host;
+#      proxy_set_header X-Forwarded-Proto $scheme;
+#      proxy_set_header X-Forwarded-Host $host;
+#      proxy_set_header X-Forwarded-Prefix /grafana;
 spec:
   ingressClassName: nginx
   rules:

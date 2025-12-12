@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: fastapi-msc-test
-          image: fastapi-msc-test:latest
+          image: fastapi-msc-test:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001
