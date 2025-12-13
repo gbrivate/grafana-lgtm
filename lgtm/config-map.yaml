@@ -21,8 +21,8 @@ data:
         exclude: [ "/var/log/pods/*/otc-container/*.log" ]
         include_file_path: true
         start_at: beginning
-        max_concurrent_files: 1000
-        poll_interval: 500ms
+        max_concurrent_files: 200
+        poll_interval: 2s
         operators:
           - id: container-parser
             type: container
@@ -39,7 +39,7 @@ data:
 
       # kubeletstats: métricas de CPU/memória/rede por Pod e Node
       kubeletstats:
-        collection_interval: 5s
+        collection_interval: 15s
         auth_type: serviceAccount
         endpoint: https://${NODE_NAME}:10250
         insecure_skip_verify: true
@@ -47,21 +47,21 @@ data:
         
       # MÉTRICAS DO CLUSTER (node allocatable, pod count, namespace stats etc)
       k8s_cluster:
-        collection_interval: 5s
+        collection_interval: 30s
 
       # Scrape do kubelet para métricas adicionais
-      prometheus/kubelet:
-        config:
-          scrape_configs:
-            - job_name: "kubelet"
-              scheme: https
-              scrape_interval: 5s
-              tls_config:
-                insecure_skip_verify: true
-              bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-              static_configs:
-                - targets:
-                    - ${NODE_NAME}:10250
+      #      prometheus/kubelet:
+      #        config:
+      #          scrape_configs:
+      #            - job_name: "kubelet"
+      #              scheme: https
+      #              scrape_interval: 5s
+      #              tls_config:
+      #                insecure_skip_verify: true
+      #              bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      #              static_configs:
+      #                - targets:
+      #                    - ${NODE_NAME}:10250
 
       # Scrape do OTel Collector (self-metrics)
       prometheus/self:
@@ -77,21 +77,21 @@ data:
         config:
           scrape_configs:
             - job_name: "kube-state-metrics"
-              scrape_interval: 5s
+              scrape_interval: 10s
               static_configs:
                 - targets: ["ksm-kube-state-metrics.kube-system.svc.cluster.local:8080"]
 
-      hostmetrics:
-        collection_interval: 5s
-        scrapers:
-          cpu: {}
-          disk: {}
-          filesystem: {}
-          load: {}
-          memory: {}
-          network: {}
-          paging: {}
-          processes: {}
+      #      hostmetrics:
+      #        collection_interval: 5s
+      #        scrapers:
+      #          cpu: {}
+      #          disk: {}
+      #          filesystem: {}
+      #          load: {}
+      #          memory: {}
+      #          network: {}
+      #          paging: {}
+      #          processes: {}
 
       # -------------------------------
       # PostgreSQL Metrics Receiver
@@ -116,12 +116,12 @@ data:
     processors:
       memory_limiter:
         check_interval: 1s
-        limit_mib: 4000
-        spike_limit_mib: 512
+        limit_mib: 1024
+        spike_limit_mib: 256
 
       # reduced batch size to lower window-risk for duplicated timestamps
       batch:
-        send_batch_size: 500
+        send_batch_size: 1024
         timeout: 5s
 
       k8sattributes:
@@ -229,7 +229,7 @@ data:
       extensions: [health_check]
       pipelines:
         metrics:
-          receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm, postgresql, hostmetrics, k8s_cluster]
+          receivers: [otlp, kubeletstats, prometheus/self, prometheus/ksm, postgresql, k8s_cluster]
           # include transform so metric normalization rules are applied
           processors: [memory_limiter, k8sattributes, transform, batch]
           exporters: [otlphttp/metrics, prometheusremotewrite]

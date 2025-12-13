@@ -45,8 +45,8 @@ spec:
               memory: 1024Mi
               cpu: 500m
             limits:
-              memory: 2048Mi
-              cpu: 1000m
+              memory: 3072Mi
+              cpu: 2000m
           env:
             # --- K8s instrumentation ---
             - name: NODE_NAME
