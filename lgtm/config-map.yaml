@@ -44,6 +44,10 @@ data:
         endpoint: https://${NODE_NAME}:10250
         insecure_skip_verify: true
         metric_groups: [node, pod, container, volume]
+        
+      # MÉTRICAS DO CLUSTER (node allocatable, pod count, namespace stats etc)
+      k8s_cluster:
+        collection_interval: 5s
 
       # Scrape do kubelet para métricas adicionais
       prometheus/kubelet:
@@ -110,7 +114,6 @@ data:
         endpoint: 0.0.0.0:55679
 
     processors:
-      # removed unsupported 'cri_parser' processor
       memory_limiter:
         check_interval: 1s
         limit_mib: 4000
@@ -226,7 +229,7 @@ data:
       extensions: [health_check]
       pipelines:
         metrics:
-          receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm, postgresql, hostmetrics]
+          receivers: [otlp, kubeletstats, prometheus/self, prometheus/kubelet, prometheus/ksm, postgresql, hostmetrics, k8s_cluster]
           # include transform so metric normalization rules are applied
           processors: [memory_limiter, k8sattributes, transform, batch]
           exporters: [otlphttp/metrics, prometheusremotewrite]

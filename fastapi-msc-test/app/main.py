@@ -82,8 +82,8 @@ async def count_requests(request, call_next):
 # ----------------------------------------------------
 
 @app.get("/slow")
-async def slow():
-    await asyncio.sleep(5)
+async def slow(timeDelay: int | None = Query(default=5)):
+    await asyncio.sleep(timeDelay / 1000)
     logger.info("Slow operation complete")
     return {"message": "done"}
 

@@ -300,6 +300,8 @@ kubectl get -n monitoring pods
 NAME                                  READY   STATUS    RESTARTS   AGE
 grafana-deployment-8458dd4b69-k27x9   1/1     Running   0          15s
 ```
+** In order to run all of this commands above once, there is k8s.sh, but it's recommended run one by one first time.
+
 Open browser at http://localhost/grafana (admim/admin) then you should see that:
 
 ![Grafana home page](grafana.png)
@@ -352,10 +354,10 @@ There is a plenty of option for the OTEL core, and for specifics stacks.
 ```
 # Let's build the docker image and deploy it into k8s
 cd fastapi-msc-test
-docker build --no-cache  --tag fastapi-msc-test:latest .
+docker build --no-cache  --tag fastapi-msc-test:1.0 .
 
 #Load docker image into Kind cluster
-kind load docker-image fastapi-msc-test
+kind load docker-image fastapi-msc-test:1.0
  
 # For all application we need create a k8s namespace, otherwise it's use default which is not good, just run it once.
 kubectl create namespace applications

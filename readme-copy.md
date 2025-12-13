@@ -57,7 +57,7 @@ docker images -a | grep none | awk '{ print $3; }' | xargs docker rmi --force
 docker rmi $(docker images -f "dangling=true" -q)
 
 # remove contianer stoped
-docker container prune
+docker container prune -f
 
 #  delete all images
 docker system prune -a -f

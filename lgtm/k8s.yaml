@@ -25,12 +25,12 @@ spec:
         - name: lgtm
           image: lgtm:1.0
           imagePullPolicy: IfNotPresent
-          readinessProbe:
-            tcpSocket:
-              port: 3000
-            initialDelaySeconds: 120 # Wait 120 seconds before starting the first check
-            periodSeconds: 10
-            timeoutSeconds: 5
+#          readinessProbe:
+#            tcpSocket:
+#              port: 3000
+#            initialDelaySeconds: 120 # Wait 120 seconds before starting the first check
+#            periodSeconds: 10
+#            timeoutSeconds: 5
           ports:
             - containerPort: 3000  # Grafana UI
               name: grafana
