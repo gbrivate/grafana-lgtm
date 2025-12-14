@@ -72,6 +72,8 @@ spec:
             # --- Enable / disable stack logs ---
             - name: ENABLE_LOGS_ALL
               value: "false"   # Your latest value overrides previous "true"
+            - name: ENABLE_LOGS_OTELCOL
+              value: "false"
             # --- Disable noisy Grafana logs ---
             - name: GF_LOG_MODE
               value: "console"
@@ -150,42 +152,3 @@ spec:
                 name: grafana-service
                 port:
                   number: 3000
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: lgtm-sa
-  namespace: monitoring
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: lgtm-read-k8s
-rules:
-  - apiGroups: [""]
-    resources:
-      - pods
-      - nodes
-      - namespaces
-      - services
-      - endpoints
-      - nodes/stats
-      - nodes/proxy
-      - nodes/metrics
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [ "apps" ]
-    resources: [ "deployments", "replicasets", "statefulsets", "daemonsets" ]
-    verbs: [ "get", "list", "watch" ]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: lgtm-read-k8s-binding
-roleRef:
-  kind: ClusterRole
-  name: lgtm-read-k8s
-  apiGroup: rbac.authorization.k8s.io
-subjects:
-  - kind: ServiceAccount
-    name: lgtm-sa
-    namespace: monitoring

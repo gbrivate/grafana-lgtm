@@ -34,6 +34,10 @@ kubectl apply -f config-map.yaml
 echo "Applying Deployment..."
 kubectl apply -f k8s.yaml
 
+echo "Applying RBAC..."
+kubectl apply -f rbac-otel.yaml
+
+
 sleep 5
 
 echo "Tailing logs..."
