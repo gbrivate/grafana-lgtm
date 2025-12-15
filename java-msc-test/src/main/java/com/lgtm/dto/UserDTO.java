@@ -1,4 +1,4 @@
-package com.corban.dto;
+package com.lgtm.dto;
 
 public class UserDTO {
     private String name;

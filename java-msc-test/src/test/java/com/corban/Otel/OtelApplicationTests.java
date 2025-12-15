@@ -1,4 +1,4 @@
-package com.corban.Otel;
+package com.lgtm.Otel;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

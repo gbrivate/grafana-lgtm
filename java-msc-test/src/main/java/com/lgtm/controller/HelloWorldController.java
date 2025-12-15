@@ -1,6 +1,6 @@
-package com.corban.controller;
+package com.lgtm.controller;
 
-import com.corban.dto.UserDTO;
+import com.lgtm.dto.UserDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

@@ -8,7 +8,7 @@
 		<version>4.0.0</version>
 		<relativePath/>
 	</parent>
-	<groupId>com.corban</groupId>
+	<groupId>com.lgtm</groupId>
 	<artifactId>java-msc-test</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>java-msc-test</name>
