@@ -9,6 +9,7 @@ kind: ClusterRole
 metadata:
   name: lgtm-read-k8s
 rules:
+  # Existing Core Resources
   - apiGroups: [""]
     resources:
       - pods
@@ -19,10 +20,27 @@ rules:
       - nodes/stats
       - nodes/proxy
       - nodes/metrics
+      - resourcequotas # <--- ADDED: Fixes ResourceQuota error
+      - replicationcontrollers # <--- ADDED: Fixes ReplicationController error
     verbs: ["get", "list", "watch"]
+
+  # Existing Apps Group Resources
   - apiGroups: [ "apps" ]
     resources: [ "deployments", "replicasets", "statefulsets", "daemonsets" ]
     verbs: [ "get", "list", "watch" ]
+
+  # NEW: Batch Group Resources for Jobs and CronJobs
+  - apiGroups: ["batch"]
+    resources:
+      - jobs # <--- ADDED: Fixes Job error
+      - cronjobs # <--- ADDED: Fixes CronJob error
+    verbs: ["get", "list", "watch"]
+
+  # NEW: Autoscaling Group Resources for HPAs
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers # <--- ADDED: Fixes HorizontalPodAutoscaler error
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

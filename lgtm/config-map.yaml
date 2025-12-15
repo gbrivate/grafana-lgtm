@@ -10,9 +10,6 @@ metadata:
   namespace: monitoring
 data:
   otelcol-config.yaml: |
-    # Patched OTEL collector config: removed unsupported `cri_parser` and applied
-    # filelog operators to strip CRI flags (F/P) and parse JSON logs.
-
     receivers:
       filelog:
         include:
@@ -96,15 +93,15 @@ data:
       # -------------------------------
       # PostgreSQL Metrics Receiver
       # -------------------------------
-      postgresql:
-        endpoint: postgres-service.datastore.svc.cluster.local:5432 # using k8s change for postgres-service.{namespace}.svc.cluster.local:5432
-        username: myuser
-        password: mypassword
-        databases:
-          - mydb
-        collection_interval: 5s
-        tls:
-          insecure: true
+      #postgresql:
+      #  endpoint: postgres-service.datastore.svc.cluster.local:5432 # using k8s change for postgres-service.{namespace}.svc.cluster.local:5432
+      #  username: myuser
+      #  password: mypassword
+      #  databases:
+      #    - mydb
+      #  collection_interval: 5s
+      #  tls:
+      #    insecure: true
 
     extensions:
       health_check:
@@ -116,8 +113,8 @@ data:
     processors:
       memory_limiter:
         check_interval: 1s
-        limit_mib: 1024
-        spike_limit_mib: 256
+        limit_mib: 2024
+        spike_limit_mib: 500
 
       # reduced batch size to lower window-risk for duplicated timestamps
       batch:
@@ -229,7 +226,15 @@ data:
       extensions: [health_check]
       pipelines:
         metrics:
-          receivers: [otlp, kubeletstats, prometheus/self, prometheus/ksm, postgresql, k8s_cluster]
+          receivers: [
+            otlp, 
+            kubeletstats, 
+            prometheus/self, 
+            prometheus/ksm, 
+    #        postgresql, 
+            k8s_cluster
+          ]
+          
           # include transform so metric normalization rules are applied
           processors: [memory_limiter, k8sattributes, transform, batch]
           exporters: [otlphttp/metrics, prometheusremotewrite]

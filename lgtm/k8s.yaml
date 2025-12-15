@@ -43,9 +43,9 @@ spec:
           resources:
             requests:
               memory: 1024Mi
-              cpu: 500m
+              cpu: 1000m
             limits:
-              memory: 3072Mi
+              memory: 2024Mi
               cpu: 2000m
           env:
             # --- K8s instrumentation ---
@@ -73,7 +73,7 @@ spec:
             - name: ENABLE_LOGS_ALL
               value: "false"   # Your latest value overrides previous "true"
             - name: ENABLE_LOGS_OTELCOL
-              value: "false"
+              value: "true"
             # --- Disable noisy Grafana logs ---
             - name: GF_LOG_MODE
               value: "console"
