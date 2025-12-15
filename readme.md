@@ -309,6 +309,24 @@ Tempo                   => trace database.
 Loki                    => logs database.
 Grafana                 => for visualization.
 ```
+# LGTM Embedded Service Endpoints
+
+The **grafana/otel-lgtm** container bundles multiple observability backends.  
+Inside the container, each embedded service listens on the following local endpoints.
+
+## Signal Endpoints
+
+| Signal   | Backend      | Protocol        | Endpoint |
+|----------|--------------|-----------------|----------|
+| Traces   | Tempo        | OTLP HTTP       | `http://127.0.0.1:4318` |
+| Traces   | Tempo        | OTLP gRPC       | `127.0.0.1:4317` |
+| Metrics  | Prometheus   | OTLP HTTP       | `http://127.0.0.1:9090/api/v1/otlp` |
+| Metrics  | Prometheus   | Remote Write    | `http://127.0.0.1:9090/api/v1/write` |
+| Logs     | Loki         | OTLP HTTP       | `http://127.0.0.1:3100/otlp` |
+| Profiles | Pyroscope    | OTLP gRPC       | `127.0.0.1:4040` |
+| UI       | Grafana      | HTTP            | `http://127.0.0.1:3000` |
+
+
 Building and deployment into k8s, at this moment we are not applying Otel custom configs yet.
 
 ```
