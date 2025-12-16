@@ -7,6 +7,8 @@ kubectl port-forward svc/fastapi-msc-test-service 8002:8002 -n applications
 
 docker run -p 8002:8002 fastapi-msc-test:latest
 
+kubectl logs -n applications deployments/fastapi-msc-test-deployment -f
+
 
 
 

@@ -69,11 +69,9 @@ spec:
               value: "true"
             - name: GF_SERVER_ENABLE_GZIP
               value: "true"
-            # --- Enable / disable stack logs ---
+            # --- Enable / disable stack logs --- (ENABLE_LOGS_LOKI,ENABLE_LOGS_PROMETHEUS,ENABLE_LOGS_TEMPO,ENABLE_LOGS_OTELCOL)
             - name: ENABLE_LOGS_ALL
-              value: "false"   # Your latest value overrides previous "true"
-            - name: ENABLE_LOGS_OTELCOL
-              value: "true"
+              value: "false"
             # --- Disable noisy Grafana logs ---
             - name: GF_LOG_MODE
               value: "console"
@@ -83,6 +81,15 @@ spec:
             - name: otelcol-config
               mountPath: /otel-lgtm/otelcol-config.yaml
               subPath: otelcol-config.yaml
+            - name: loki-config
+              mountPath: /otel-lgtm/loki-config.yaml
+              subPath: loki-config.yaml
+#            - name: tempo-config
+#              mountPath: /otel-lgtm/tempo-config.yaml
+#              subPath: tempo-config.yaml
+            - name: prometheus-config
+              mountPath: /otel-lgtm/prometheus/prometheus.yml
+              subPath: prometheus.yml
             - name: varlogpods
               mountPath: /var/log/pods
               readOnly: true
@@ -100,6 +107,15 @@ spec:
         - name: otelcol-config
           configMap:
             name: otelcol-config
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+        - name: loki-config
+          configMap:
+            name: loki-config
+#        - name: tempo-config
+#          configMap:
+#            name: tempo-config
 
 ---
 apiVersion: v1

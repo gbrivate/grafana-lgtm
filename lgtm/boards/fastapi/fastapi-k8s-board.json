@@ -93,9 +93,9 @@
       "options": {
         "legend": {
           "calcs": [],
-          "displayMode": "hidden",
+          "displayMode": "table",
           "placement": "right",
-          "showLegend": false
+          "showLegend": true
         },
         "tooltip": {
           "hideZeros": false,
@@ -112,6 +112,7 @@
           },
           "editorMode": "code",
           "expr": "sum by (http_status_code) (increase(http_server_duration_milliseconds_count{deployment=\"$deployment\"}[$__rate_interval]))",
+          "interval": "",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -322,7 +323,7 @@
         "defaults": {
           "mappings": [],
           "thresholds": {
-            "mode": "percentage",
+            "mode": "absolute",
             "steps": [
               {
                 "color": "green",
@@ -330,11 +331,11 @@
               },
               {
                 "color": "orange",
-                "value": 70
+                "value": 100
               },
               {
                 "color": "red",
-                "value": 85
+                "value": 160
               }
             ]
           }
@@ -943,11 +944,30 @@
             "type": "tempo",
             "uid": "tempo"
           },
+          "filters": [
+            {
+              "id": "c4f5f21e",
+              "operator": "=",
+              "scope": "span"
+            },
+            {
+              "id": "service-name",
+              "isCustomValue": false,
+              "operator": "=~",
+              "scope": "resource",
+              "tag": "service.name",
+              "value": [
+                "$deployment"
+              ],
+              "valueType": "string"
+            }
+          ],
           "limit": 20,
           "metricsQueryType": "range",
+          "query": "{resource.service.name = \"fastapi-msc-test\"}",
           "queryType": "serviceMap",
           "refId": "A",
-          "serviceMapQuery": "{server=\"fastapi-msc-test\"}",
+          "serviceMapQuery": "{server=~\"fastapi-msc-test\"}",
           "serviceMapUseNativeHistograms": false,
           "tableType": "traces"
         }
@@ -957,7 +977,7 @@
     }
   ],
   "preload": false,
-  "refresh": "auto",
+  "refresh": "10s",
   "schemaVersion": 42,
   "tags": [],
   "templating": {
@@ -1024,7 +1044,7 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},

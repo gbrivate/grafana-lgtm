@@ -68,3 +68,5 @@ docker run -p 3000:3000 -p 4317:4317 -p 4318:4318 -p 4040:4040 -p 9090:9090  \
 #COPY config/otel/otelcol-config-k8s.yaml /otel-lgtm/otelcol-config.yaml
 
 
+# Ver todas metrics de um service
+count({service_name="fastapi-msc-test"}) by (__name__)

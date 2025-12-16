@@ -29,16 +29,21 @@ while true; do
 done
 
 echo "Applying ConfigMap..."
-kubectl apply -f config-map.yaml
+kubectl apply -f ./config/loki/loki-config-map.yaml
+kubectl apply -f ./config/prometheus/prometheus-config-map.yaml
+#kubectl apply -f ./config/tempo/tempo-config-map.yaml
+kubectl apply -f ./config/otel/otel-config-map.yaml
+
+echo "Applying RBAC..."
+kubectl apply -f ./config/otel/rbac-otel.yaml
 
 echo "Applying Deployment..."
 kubectl apply -f k8s.yaml
 
-echo "Applying RBAC..."
-kubectl apply -f rbac-otel.yaml
 
 
-sleep 5
+
+sleep 10
 
 echo "Tailing logs..."
 kubectl logs -n "$NAMESPACE" deployment/"$DEPLOYMENT" -f

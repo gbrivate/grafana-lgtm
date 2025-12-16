@@ -558,7 +558,7 @@ Via Docker file
 COPY otel/otelcol-config-postgres.yaml /otel-lgtm/otelcol-config.yaml
 ``` 
 Or via Configmap/service account
-[config-map.yaml](lgtm/config-map.yaml) and [rbac-otel.yaml](lgtm/rbac-otel.yaml)
+[config-map.yaml](lgtm/config/otel/otel-config-map.yaml) and [rbac-otel.yaml](lgtm/config/otel/rbac-otel.yaml)
 
 Inside of [k8s.yaml](lgtm/k8s.yaml) uncommnet this parts:
 ```
