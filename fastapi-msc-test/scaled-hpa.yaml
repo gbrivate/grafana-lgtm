@@ -1,0 +1,76 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fastapi-custom-hpa
+  namespace: applications
+spec:
+  scaleTargetRef:
+    name: fastapi-msc-test-deployment
+  minReplicaCount: 1
+  maxReplicaCount: 3
+  pollingInterval: 5   # seconds between metric checks
+  cooldownPeriod: 15   # wait 60s before scaling down
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 15
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "70"
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "70"
+    - type: prometheus
+      metadata:
+        serverAddress: http://grafana-service.monitoring.svc.cluster.local:9090
+        query: |
+          sum(
+          rate(http_server_duration_milliseconds_count{deployment="fastapi-msc-test-deployment"}[1m])
+          )
+          /
+          max(kube_deployment_status_replicas_available{deployment="fastapi-msc-test-deployment", namespace="applications"})
+        threshold: "1"
+
+#  helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+#  helm repo update
+
+#  helm upgrade --install metrics-server metrics-server/metrics-server \
+#  --namespace kube-system \
+#  --set args[0]=--kubelet-insecure-tls \
+#  --set args[1]=--kubelet-preferred-address-types=InternalIP,Hostname
+# kubectl get pods -n kube-system | grep metrics-server
+# kubectl logs -n kube-system deployment/metrics-server
+#  kubectl top nodes
+#  kubectl top pods -n applications
+
+
+# helm repo add kedacore https://kedacore.github.io/charts
+# helm repo update
+# helm install keda kedacore/keda --namespace keda --create-namespace --version 2.14.2
+# kubectl get pods -n keda
+# kubectl get apiservices | grep keda
+# kubectl apply -f scaled-hpa.yaml
+# kubectl get hpa -n applications -o wide -w
+# kubectl get deploy fastapi-msc-test-deployment -n applications -w
+
+#  | KEDA Trigger | Needs metrics-server | Needs Prometheus Adapter | Uses KEDA adapter |
+#  | ------------ | -------------------- | ------------------------ | ----------------- |
+#  | `cpu`        | Yes                  | No                       | No                |
+#  | `memory`     | Yes                  | No                       | No                |
+#  | `prometheus` | No                   | No                       | Yes               |
+#  | `kafka`      | No                   | No                       | Yes               |
+#  | `rabbitmq`   | No                   | No                       | Yes               |
+#  | `http`       | No                   | No                       | Yes               |
+#  | `external`   | No                   | No                       | Yes               |
+
+
+# kubectl get scaledobject -A
+# kubectl delete scaledobject <scaledobject-name> -n <namespace>
+# kubectl annotate scaledobject <name> autoscaling.keda.sh/paused="true" -n <namespace>
+
+# resume
+# kubectl annotate scaledobject <name> autoscaling.keda.sh/paused- -n <namespace>

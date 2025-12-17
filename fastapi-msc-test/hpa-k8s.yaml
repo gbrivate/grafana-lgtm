@@ -1,0 +1,40 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fastapi-msc-test-hpa
+  namespace: applications
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fastapi-msc-test-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70  # scale if avg CPU > 75
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70   # scale if avg CPU > 75
+
+#  helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+#  helm repo update
+
+#  helm upgrade --install metrics-server metrics-server/metrics-server \
+#  --namespace kube-system \
+#  --set args[0]=--kubelet-insecure-tls \
+#  --set args[1]=--kubelet-preferred-address-types=InternalIP,Hostname
+# kubectl get pods -n kube-system | grep metrics-server
+# kubectl logs -n kube-system deployment/metrics-server
+#  kubectl top nodes
+#  kubectl top pods -n applications

@@ -36,7 +36,7 @@ data:
 
       # kubeletstats: métricas de CPU/memória/rede por Pod e Node
       kubeletstats:
-        collection_interval: 15s
+        collection_interval: 5s
         auth_type: serviceAccount
         endpoint: https://${NODE_NAME}:10250
         insecure_skip_verify: true
@@ -44,7 +44,7 @@ data:
         
       # MÉTRICAS DO CLUSTER (node allocatable, pod count, namespace stats etc)
       k8s_cluster:
-        collection_interval: 15s
+        collection_interval: 5s
 
       # Scrape do kubelet para métricas adicionais
       #      prometheus/kubelet:

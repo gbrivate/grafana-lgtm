@@ -557,7 +557,7 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 8,
+        "w": 12,
         "x": 0,
         "y": 21
       },
@@ -659,21 +659,22 @@
               }
             ]
           },
-          "unit": "bytes"
+          "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 9,
-        "w": 8,
-        "x": 8,
+        "w": 12,
+        "x": 12,
         "y": 21
       },
-      "id": 9,
+      "id": 10,
       "options": {
         "legend": {
           "calcs": [
-            "lastNotNull"
+            "mean",
+            "max"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -693,13 +694,26 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "k8s_pod_memory_working_set_bytes{namespace=\"$namespace\", pod=~\"$pod\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "k8s_pod_memory_major_page_faults_ratio{k8s_namespace_name=\"$namespace\", k8s_deployment_name=~\"$deployment\", pod=~\"$pod\"}",
+          "legendFormat": "Major - {{pod}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "k8s_pod_memory_page_faults_ratio{namespace=\"$namespace\", pod=~\"$pod\"}",
+          "instant": false,
+          "legendFormat": "Total - {{pod}}",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Working Set (K8s OOM Killer uses this)",
+      "title": "Page Faults Ratio (Memory Pressure)",
       "type": "timeseries"
     },
     {
@@ -756,22 +770,21 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "bytes"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 16,
-        "y": 21
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 30
       },
-      "id": 10,
+      "id": 9,
       "options": {
         "legend": {
           "calcs": [
-            "mean",
-            "max"
+            "lastNotNull"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -791,24 +804,13 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "k8s_pod_memory_major_page_faults_ratio{k8s_namespace_name=\"$namespace\", k8s_deployment_name=~\"$deployment\", pod=~\"$pod\"}",
-          "legendFormat": "Major - {{pod}}",
+          "expr": "k8s_pod_memory_working_set_bytes{namespace=\"$namespace\", pod=~\"$pod\"}",
+          "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "k8s_pod_memory_page_faults_ratio{namespace=\"$namespace\", pod=~\"$pod\"}",
-          "legendFormat": "Total - {{pod}}",
-          "range": true,
-          "refId": "B"
         }
       ],
-      "title": "Page Faults Ratio (Memory Pressure)",
+      "title": "Working Set (K8s OOM Killer uses this)",
       "type": "timeseries"
     },
     {
@@ -817,7 +819,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 38
       },
       "id": 11,
       "panels": [],
@@ -886,7 +888,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 39
       },
       "id": 12,
       "interval": "5s",
@@ -996,7 +998,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 39
       },
       "id": 13,
       "interval": "5s",
@@ -1120,9 +1122,7 @@
       },
       {
         "current": {
-          "text": [
-            "All"
-          ],
+          "text": "All",
           "value": [
             "$__all"
           ]

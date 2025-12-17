@@ -44,7 +44,7 @@ providers:
   - name: "Ingress Nginx - Controller"
     type: file
     options:
-      path: /otel-lgtm/boards/ingresss-controller/ingress-controller-board.json
+      path: /otel-lgtm/boards/ingress/ingress-controller-board.json
       foldersFromFilesStructure: false
 
 # /otel-lgtm/grafana/conf/provisioning/dashboards
