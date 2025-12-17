@@ -9,37 +9,42 @@ providers:
   - name: "Fastapi msc"
     type: file
     options:
-      path: /otel-lgtm/fastapi/fastapi-board.json
+      path: /otel-lgtm/boards/fastapi/fastapi-board.json
       foldersFromFilesStructure: false
   - name: "Fastapi - K8s"
     type: file
     options:
-      path: /otel-lgtm/fastapi/fastapi-k8s-board.json
+      path: /otel-lgtm/boards/fastapi/fastapi-k8s-board.json
       foldersFromFilesStructure: false
   - name: "Fastapi + Kafka"
     type: file
     options:
-      path: /otel-lgtm/fastapi/fastapi-kafka-board.json
+      path: /otel-lgtm/boards/fastapi/fastapi-kafka-board.json
       foldersFromFilesStructure: false
   - name: "K8s"
     type: file
     options:
-      path: /otel-lgtm/k8s/k8s-board.json
+      path: /otel-lgtm/boards/k8s/k8s-board.json
       foldersFromFilesStructure: false
   - name: "Kafka"
     type: file
     options:
-      path: /otel-lgtm/kafka/kafka-board.json
+      path: /otel-lgtm/boards/kafka/kafka-board.json
       foldersFromFilesStructure: false
   - name: "Kafka per topic"
     type: file
     options:
-      path: /otel-lgtm/kafka/kafka-per-topic.json
+      path: /otel-lgtm/boards/kafka/kafka-per-topic.json
       foldersFromFilesStructure: false
   - name: "Pod inspector"
     type: file
     options:
-      path: /otel-lgtm/k8s/pod-inspector-board.json
+      path: /otel-lgtm/boards/k8s/pod-inspector-board.json
+      foldersFromFilesStructure: false
+  - name: "Ingress Nginx - Controller"
+    type: file
+    options:
+      path: /otel-lgtm/boards/ingresss-controller/ingress-controller-board.json
       foldersFromFilesStructure: false
 
 # /otel-lgtm/grafana/conf/provisioning/dashboards

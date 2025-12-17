@@ -69,8 +69,8 @@ spec:
               value: "true"
             - name: GF_SERVER_ENABLE_GZIP
               value: "true"
-            # --- Enable / disable stack logs --- (ENABLE_LOGS_LOKI,ENABLE_LOGS_PROMETHEUS,ENABLE_LOGS_TEMPO,ENABLE_LOGS_OTELCOL)
-            - name: ENABLE_LOGS_ALL
+            # --- Enable / disable stack logs --- (ENABLE_LOGS_ALL, ENABLE_LOGS_LOKI,ENABLE_LOGS_PROMETHEUS,ENABLE_LOGS_TEMPO,ENABLE_LOGS_OTELCOL)
+            - name: ENABLE_LOGS_OTELCOL
               value: "false"
             # --- Disable noisy Grafana logs ---
             - name: GF_LOG_MODE

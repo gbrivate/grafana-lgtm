@@ -19,7 +19,7 @@ data:
         include_file_path: true
         start_at: beginning
         max_concurrent_files: 200
-        poll_interval: 2s
+        poll_interval: 4s
         operators:
           - id: container-parser
             type: container
@@ -44,7 +44,7 @@ data:
         
       # MÉTRICAS DO CLUSTER (node allocatable, pod count, namespace stats etc)
       k8s_cluster:
-        collection_interval: 30s
+        collection_interval: 15s
 
       # Scrape do kubelet para métricas adicionais
       #      prometheus/kubelet:
@@ -74,9 +74,19 @@ data:
         config:
           scrape_configs:
             - job_name: "kube-state-metrics"
-              scrape_interval: 10s
+              scrape_interval: 5s
               static_configs:
                 - targets: ["ksm-kube-state-metrics.kube-system.svc.cluster.local:8080"]
+                  
+      prometheus/ingress:
+        config:
+          scrape_configs:
+            - job_name: "ingress-nginx"
+              scrape_interval: 5s
+              static_configs:
+                - targets: ["ingress-nginx-controller.ingress-nginx.svc.cluster.local:10254"]
+              
+                            
 
       #      hostmetrics:
       #        collection_interval: 5s
@@ -232,7 +242,8 @@ data:
             prometheus/self, 
             prometheus/ksm, 
     #        postgresql, 
-            k8s_cluster
+            k8s_cluster,
+            prometheus/ingress
           ]
           
           # include transform so metric normalization rules are applied
