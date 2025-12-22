@@ -14,6 +14,7 @@ export class App {
 
   diceResults: any[] = [];
   statusCode: any;
+  loop: any;
 
   constructor(private api: ApiService) {}
 
@@ -39,5 +40,13 @@ export class App {
     this.api.error(this.statusCode).subscribe(res => {
 
     });
+  }
+
+  callLoop() {
+    this.api.callLoop(this.loop).subscribe(res => {});
+  }
+
+  callJava() {
+    this.api.callJava().subscribe(res => {});
   }
 }

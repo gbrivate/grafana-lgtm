@@ -56,7 +56,7 @@ async def get_custom_error(code: int):
 
 @app.get("/call-loop")
 async def call_loop(loop: int | None = Query(default=1)):
-    url = "http://java:8080/api/loop?id="+str(loop)
+    url = "http://java-msc-test-service.applications.svc.cluster.local:8080/api/loop?id="+str(loop)
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url,  timeout=httpx.Timeout(30.0))

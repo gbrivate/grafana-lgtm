@@ -3,7 +3,14 @@ Teste OTEL com angular<br>
 <button id="CallSlow" data-otel-name="CallSlow" (click)="callSlow()">Call Slow</button><br>
 
 <input id="statusCode" [(ngModel)]="statusCode"  >
-<div id="error" data-otel-name="error" (click)="error()">Call Slow</div>
+<div id="error" data-otel-name="error" (click)="error()">Error</div>
+
+<br>
+<input id="loop" [(ngModel)]="loop"  >
+<div id="callloop" data-otel-name="callloop" (click)="callLoop()">Call Sloop</div>
+
+<br>
+<div id="calljava" data-otel-name="calljava" (click)="callJava()">Call Java</div>
 
 
 <router-outlet />

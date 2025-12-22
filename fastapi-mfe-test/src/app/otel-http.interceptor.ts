@@ -6,7 +6,7 @@ import opentelemetry from '@opentelemetry/api';
 @Injectable()
 export class OtelHttpInterceptor implements HttpInterceptor {
   meter = opentelemetry.metrics.getMeter(
-    'fastapi-mfe-test-frontend',
+    'fastapi-mfe-test',
     '0.1.0'
   );
 

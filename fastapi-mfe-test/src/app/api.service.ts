@@ -45,4 +45,12 @@ export class ApiService {
       params: { loop }
     });
   }
+
+  callJava(): Observable<any> {
+    return this.http.get(`http://localhost/java/api/hello`, {
+      mode: 'no-cors',
+    });
+  }
+
+
 }

@@ -34,6 +34,8 @@ import {context, trace} from '@opentelemetry/api';
 const resource = new Resource({
   [SemanticResourceAttributes.SERVICE_NAME]: 'fastapi-mfe-test',
   [SemanticResourceAttributes.SERVICE_VERSION]: '0.1.0',
+  'deployment.environment': 'production', // Try changing this to 'production'
+  'browser.name': navigator.userAgent
 });
 
 /* ------------------------------------------------------------------ */
@@ -41,30 +43,6 @@ const resource = new Resource({
 /* ------------------------------------------------------------------ */
 
 const tracerProvider = new WebTracerProvider({resource});
-
-export const userInteractionHook = (span: any, element: HTMLElement) => {
-  if (!element || typeof element.getAttribute !== 'function') return;
-
-  const id = element.id;
-  const nameAttr = element.getAttribute('name');
-  const otelName = element.getAttribute('data-otel-name');
-  const ariaLabel = element.getAttribute('aria-label');
-  const tag = element.tagName.toLowerCase();
-
-  // Choose the best identifier
-  const identifier = otelName || id || nameAttr || ariaLabel || element.innerText?.slice(0, 15) || 'anonymous';
-
-  // Update the name
-  span.updateName(`UI Click: <${tag}> ${identifier}`);
-
-  // Add attributes for filtering
-  span.setAttributes({
-    'ui.element.id': id || 'none',
-    'ui.element.name': nameAttr || 'none',
-    'ui.element.tag': tag,
-    'ui.element.data_name': otelName || 'none'
-  });
-};
 
 tracerProvider.addSpanProcessor(
   new BatchSpanProcessor(
@@ -74,10 +52,10 @@ tracerProvider.addSpanProcessor(
   )
 );
 
+import { W3CTraceContextPropagator } from '@opentelemetry/core';
 tracerProvider.register({
-  propagator: new B3Propagator(),
+  propagator: new W3CTraceContextPropagator(),
 });
-
 /* ------------------------------------------------------------------ */
 /* Auto-instrumentations (Fetch, XHR, Document, User Interaction)     */
 /* ------------------------------------------------------------------ */
@@ -140,7 +118,7 @@ meterProvider.addMetricReader(metricReader);
 opentelemetry.metrics.setGlobalMeterProvider(meterProvider);
 
 const meter = opentelemetry.metrics.getMeter(
-  'fastapi-mfe-test-frontend',
+  'fastapi-mfe-test',
   '0.1.0'
 );
 
