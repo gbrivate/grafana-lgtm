@@ -35,7 +35,7 @@ const resource = new Resource({
   [SemanticResourceAttributes.SERVICE_NAME]: 'fastapi-mfe-test',
   [SemanticResourceAttributes.SERVICE_VERSION]: '0.1.0',
   'deployment.environment': 'production', // Try changing this to 'production'
-  'browser.name': navigator.userAgent
+  'browser.name': navigator.userAgent.includes('Chrome') ? 'chrome' : 'other',
 });
 
 /* ------------------------------------------------------------------ */
