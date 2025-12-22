@@ -70,7 +70,7 @@ spec:
             - name: GF_SERVER_ENABLE_GZIP
               value: "true"
             # --- Enable / disable stack logs --- (ENABLE_LOGS_ALL, ENABLE_LOGS_LOKI,ENABLE_LOGS_PROMETHEUS,ENABLE_LOGS_TEMPO,ENABLE_LOGS_OTELCOL)
-            - name: ENABLE_LOGS_OTELCOL
+            - name: ENABLE_LOGS_ALL
               value: "false"
             # --- Disable noisy Grafana logs ---
             - name: GF_LOG_MODE
@@ -146,15 +146,6 @@ kind: Ingress
 metadata:
   name: grafana-ingress
   namespace: monitoring
-#  annotations:
-#    nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
-#    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-#    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
-#    nginx.ingress.kubernetes.io/configuration-snippet: |
-#      proxy_set_header Host $host;
-#      proxy_set_header X-Forwarded-Proto $scheme;
-#      proxy_set_header X-Forwarded-Host $host;
-#      proxy_set_header X-Forwarded-Prefix /grafana;
 spec:
   ingressClassName: nginx
   rules:
@@ -168,3 +159,33 @@ spec:
                 name: grafana-service
                 port:
                   number: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: otel-ingress
+  namespace: monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /otel(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: grafana-service
+                port:
+                  number: 4318
+          - path: /prometheus(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: grafana-service
+                port:
+                  number: 9090

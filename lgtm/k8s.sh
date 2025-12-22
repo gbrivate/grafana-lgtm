@@ -31,7 +31,7 @@ done
 echo "Applying ConfigMap..."
 kubectl apply -f ./config/loki/loki-config-map.yaml
 kubectl apply -f ./config/prometheus/prometheus-config-map.yaml
-#kubectl apply -f ./config/tempo/tempo-config-map.yaml
+kubectl apply -f ./config/tempo/tempo-config-map.yaml
 kubectl apply -f ./config/otel/otel-config-map.yaml
 
 echo "Applying RBAC..."

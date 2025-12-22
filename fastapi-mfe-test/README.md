@@ -1,38 +1,38 @@
 ## Docker
-docker build --tag fastapi-msc-test:latest .
-kind load docker-image fastapi-msc-test 
-kubectl rollout restart deployment fastapi-msc-test-deployment -n applications
-kubectl port-forward svc/fastapi-msc-test-service 8002:8002 -n applications
+docker build --tag fastapi-mfe-test:latest .
+kind load docker-image fastapi-mfe-test 
+kubectl rollout restart deployment fastapi-mfe-test-deployment -n applications
+kubectl port-forward svc/fastapi-mfe-test-service 8002:8002 -n applications
 
 
-docker run -p 8002:8002 fastapi-msc-test:latest
+docker run -p 8002:8002 fastapi-mfe-test:latest
 
-kubectl logs -n applications deployments/fastapi-msc-test-deployment -f
+kubectl logs -n applications deployments/fastapi-mfe-test-deployment -f
 
 
 
 
 clear
-docker image remove fastapi-msc-test:latest 
-kubectl delete -n applications deployments.apps fastapi-msc-test-deployment
-docker build --tag fastapi-msc-test:latest .
-kind load docker-image fastapi-msc-test
+docker image remove fastapi-mfe-test:latest 
+kubectl delete -n applications deployments.apps fastapi-mfe-test-deployment
+docker build --tag fastapi-mfe-test:latest .
+kind load docker-image fastapi-mfe-test
 kubectl apply -f k8s.yaml
-kubectl logs -n applications deployments/fastapi-msc-test-deployment -f
+kubectl logs -n applications deployments/fastapi-mfe-test-deployment -f
 
 
 docker container stop fastapi
 docker container remove fastapi
-docker build --no-cache  --tag fastapi-msc-test:latest .
+docker build --no-cache  --tag fastapi-mfe-test:latest .
 docker run -p 8001:8001 \
     --name fastapi \
     --network=mynet \
-    -t fastapi-msc-test:latest
+    -t fastapi-mfe-test:latest
 
 
 
-kubectl logs deployments/fastapi-msc-test-deployment -n applications
-kubectl logs deployments/fastapi-msc-test-deployment -n applications | grep grafana
+kubectl logs deployments/fastapi-mfe-test-deployment -n applications
+kubectl logs deployments/fastapi-mfe-test-deployment -n applications | grep grafana
 
 
 hey -n 1000 -c 1 -q 1 http://localhost:8080/fastapi/rolldice?player=gabriel

@@ -33,6 +33,8 @@ data:
             cors:
               allowed_origins:
                 - http://*
+              allowed_headers:
+              - "*"
 
       # kubeletstats: métricas de CPU/memória/rede por Pod e Node
       kubeletstats:

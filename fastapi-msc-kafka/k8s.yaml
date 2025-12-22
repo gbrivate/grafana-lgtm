@@ -67,7 +67,7 @@ spec:
     - host: localhost
       http:
         paths:
-          - path: /fastapi-kafka/(.*)
+          - path: /mfe/fastapi-test/(.*)
             pathType: ImplementationSpecific
             backend:
               service:
