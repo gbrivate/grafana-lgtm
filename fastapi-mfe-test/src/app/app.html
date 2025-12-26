@@ -11,6 +11,13 @@ Teste OTEL com angular<br>
 
 <br>
 <div id="calljava" data-otel-name="calljava" (click)="callJava()">Call Java</div>
-
-
+<br>
+<p>Assinar conteudo</p>
+<input [(ngModel)]="content">
+<button (click)="signHash()">Sign</button><br>
+<p>Status: {{status()}}</p>
+<p>hash: {{hash()}}</p>
+<br>
+<button (click)="verifyData()">Verify data</button><br>
+<p>{{msg()}}</p>
 <router-outlet />

@@ -3,6 +3,7 @@ fastapi
 uvicorn
 httpx[http2]
 python-json-logger
+cryptography
 
 ## OpenTelemetry Core
 opentelemetry-distro

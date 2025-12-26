@@ -9,13 +9,13 @@ ENV OTEL_SERVICE_NAME=fastapi-msc-test \
     OTEL_RESOURCE_ATTRIBUTES="service.version=1.0,deployment.environment=development,team=my-team" \
     OTEL_EXPORTER_OTLP_COMPRESSION=gzip \
     OTEL_EXPORTER_OTLP_INSECURE=true \
-    OTEL_EXPORTER_OTLP_ENDPOINT=grafana-service.monitoring.svc.cluster.local:4317 \
+    OTEL_EXPORTER_OTLP_ENDPOINT=opentelemetrycollector.corban.svc.cluster.local:4317 \
     OTEL_LOGS_EXPORTER=none \
-    OTEL_TRACES_SAMPLER=parentbased_always_on \
     OTEL_PYTHON_FASTAPI_EXCLUDED_URLS="health,metrics,healthz" \
-    OTEL_METRIC_EXPORT_INTERVAL=5000 \
+    OTEL_TRACES_SAMPLER=parentbased_traceidratio \
+    OTEL_TRACES_SAMPLER_ARG=0.05 \
+    OTEL_METRIC_EXPORT_INTERVAL=15000 \
     OTEL_METRIC_EXPORT_TIMEOUT=5000
-
 
 # Workdir
 WORKDIR /app

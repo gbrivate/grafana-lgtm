@@ -126,21 +126,21 @@ This repository exists to provide a **complete, ready‑to‑use local observabi
 
 Below is a conceptual overview of the observability stack in this repository:
 
-                                User / Browser (http://localhost/...)
+                                User / Browser (http://www...)
                                                 |
                                                 |
     +-------------------------------------------|-----------------------------------+
-    |  KUBERNETES CLUSTER (KinD)                v                                   |
+    |  KUBERNETES CLUSTER                       v                                   |
     |                                 +---------------------+                       |
     |                                 |  Ingress Controller |                       |
     |                                 +----------+----------+                       |
     |                                            |                                  |         
-    |              ______________________________|_____________                     |
-    |            |                                             |                    |
-    |            v                                             v                    | 
-    |  +---------------------+           +---------------------------------------+  |
-    |  |  Ingress Controller |---------->|  LGTM Stack (grafana/otel-lgtm)       |  |
-    |  +----------+----------+           |                                       |  |
+    |             _______________________________|_______________                   |
+    |             |                                             |                   |
+    |             |                                             v                   | 
+    |             |                      +---------------------------------------+ |
+    |             |                      |  LGTM Stack (grafana/otel-lgtm)       |  |
+    |             |                      |                                       |  |
     |             |                      |  +-----------+      +--------------+  |  |
     |             |                      |  | Grafana   |<---->| Prometheus   |  |  |
     |             |                      |  | UI        |<---->| Tempo        |  |  |
