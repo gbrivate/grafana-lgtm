@@ -1,86 +1,138 @@
-## Docker
-docker build --tag fastapi-mfe-test:latest .
-kind load docker-image fastapi-mfe-test 
-kubectl rollout restart deployment fastapi-mfe-test-deployment -n applications
-kubectl port-forward svc/fastapi-mfe-test-service 8002:8002 -n applications
+# Angular + OpenTelemetry (OTel) sdk
+
+Sample production-oriented overview of using OpenTelemetry (OTel) 
+with an Angular application, focused on browser tracing and metrics. This assumes Angular 15+ and a standard SPA deployment.
+
+### What OpenTelemetry Covers in Angular (Browser)
+
+Signals
+
+- Traces: Page loads, route changes, XHR/fetch calls, user interactions.
+- Metrics (optional): Web vitals and custom measurements (still maturing in browsers).
+- Logs: Typically handled separately; OTel browser logging support is limited.
+
+### Scope
+
+- Frontend telemetry complements backend telemetry (FastAPI, Node, etc.) via distributed tracing using context propagation headers.
+---
+
+## Recommended Architecture
+
+OTel SDK (browser) initialized early (before Angular bootstrap).
+Auto-instrumentations for:
+- fetch / XMLHttpRequest
+- Document load
+- User interactions
+
+OTLP HTTP exporter sending traces to:
+- An OTel Collector (recommended), or
+- A vendor endpoint (Datadog, New Relic, Grafana Tempo, etc.).
+
+CORS + headers aligned with backend for trace continuity.
 
 
-docker run -p 8002:8002 fastapi-mfe-test:latest
+## OTEL dependencies
 
-kubectl logs -n applications deployments/fastapi-mfe-test-deployment -f
+```js
+  "@opentelemetry/api": "1.9.0",
+  "@opentelemetry/auto-instrumentations-web": "0.41.0",
+  "@opentelemetry/exporter-metrics-otlp-http": "0.53.0",
+  "@opentelemetry/exporter-trace-otlp-http": "0.53.0",
+  "@opentelemetry/instrumentation": "0.53.0",
+  "@opentelemetry/propagator-b3": "1.26.0",
+  "@opentelemetry/resources": "1.26.0",
+  "@opentelemetry/sdk-metrics": "1.26.0",
+  "@opentelemetry/sdk-trace-web": "1.26.0",
+  "@opentelemetry/semantic-conventions": "1.27.0",
+```
+### Instrument setup
 
+- This file must be imported before Angular bootstraps [instrument.ts](src/instrument.ts)
+- Import before Angular bootstrap [main.ts](src/main.ts)
+- Otel intercep for custom metrics [otel-http.interceptor.ts](src/app/otel-http.interceptor.ts)
 
+### Backend Correlation (Critical)
 
+To enable end-to-end traces:
+Backend must:
+- Accept traceparent / baggage headers.
+- Be instrumented with OTel.
 
-clear
-docker image remove fastapi-mfe-test:latest 
-kubectl delete -n applications deployments.apps fastapi-mfe-test-deployment
-docker build --tag fastapi-mfe-test:latest .
-kind load docker-image fastapi-mfe-test
+CORS must allow:
+- Access-Control-Allow-Headers: traceparent, baggage
+
+### Known Limitations
+
+- No automatic error stack symbolication (use source maps + vendor tooling).
+- Metrics support in browsers is limited compared to backend SDKs.
+- Sampling must be carefully tuned to avoid excess client telemetry.
+
+### Best Practices
+
+- Always send telemetry to an OTel Collector, not directly to vendors.
+- Use sampling (e.g., 10–20%) on the frontend.
+- Avoid capturing PII in spans or attributes.
+- Align service.name and environment tags with backend services.
+
+---
+
+## Docker 
+
+```dockerfile
+# Building docker image
+docker build --tag fastapi-mfe-test:1.0 .
+
+# Running docker image
+docker run --name fastapi-mfe-test -p 4200:4200 fastapi-mfe-test:1.0
+
+# Stoping container 
+docker container stop fastapi-mfe-test
+
+# Removing container
+docker container remove fastapi-mfe-test
+
+# Removing docker image
+docker image remove fastapi-mfe-test:1.0
+```
+---
+
+## Kind
+```
+# Loading docker image into kind cluster
+kind load docker-image fastapi-mfe-test:1.0
+```
+
+---
+## Kubectl (k8s)
+```
+# Applying k8s configs
 kubectl apply -f k8s.yaml
+
+# Checking the pods status
+kubectl get pods -n applications
+kubectl get pods -n applications | grep fastapi-mfe-test
+
+# Logging
 kubectl logs -n applications deployments/fastapi-mfe-test-deployment -f
 
+# List service
+kubectl get svc -n applications | grep fastapi-mfe
 
-docker container stop fastapi
-docker container remove fastapi
-docker build --no-cache  --tag fastapi-mfe-test:latest .
-docker run -p 8001:8001 \
-    --name fastapi \
-    --network=mynet \
-    -t fastapi-mfe-test:latest
+# Forwarding port for tests directly to k8s service
+kubectl port-forward svc/fastapi-mfe-test-service 4200:4200 -n applications
 
+# Restarting deploymenty 
+kubectl rollout restart deployment fastapi-mfe-test-deployment -n applications
 
+# Deleting k8s deployment 
+kubectl delete -n applications deployments.apps fastapi-mfe-test-deployment
+```
+---
+## Grafana 
 
-kubectl logs deployments/fastapi-mfe-test-deployment -n applications
-kubectl logs deployments/fastapi-mfe-test-deployment -n applications | grep grafana
+MFE Board 
 
+![img_1.png](grafana-board.png)
 
-hey -n 1000 -c 1 -q 1 http://localhost:8080/fastapi/rolldice?player=gabriel
-hey -n 10 -c 1 -q 1 http://localhost:8080/fastapi/slow
-
-
-
-# Bancos e Mensageria (Drivers)
-sqlalchemy
-aioredis  # ou redis
-aiokafka
-psycopg2-binary # se usar Postgres
-
-## OpenTelemetry Core
-opentelemetry-distro
-opentelemetry-exporter-otlp
-
-
-## OpenTelemetry - Comunicação HTTP e Chamadas de API
-# asgi / fastapi: Capturam o início da requisição, rotas e tempo total de resposta no servidor.
-# httpx / requests / aiohttp-client: Monitoram chamadas para APIs externas (quem seu serviço chama).
-# grpc: Monitora chamadas de alta performance via protocolo gRPC
-
-opentelemetry-instrumentation-requests
-opentelemetry-instrumentation-httpx
-opentelemetry-instrumentation-aiohttp-client
-opentelemetry-instrumentation-grpc
-
-## OpenTelemetry - Infraestrutura e Servidor
-# asyncio: Monitora a saúde e latência das tarefas assíncronas do Python.
-
-opentelemetry-instrumentation-asyncio
-opentelemetry-instrumentation-asyncpg
-opentelemetry-instrumentation-asgi
-
-## OpenTelemetry - Banco de Dados e Cache (Persistência)
-# sqlalchemy: Rastreia queries geradas pelo ORM e tempo de execução no banco.
-# sycopg2 / asyncpg: Instrumentam o driver do PostgreSQL (síncrono e assíncrono).
-# redis: Monitora comandos de cache (GET, SET) e latência do servidor Redis.
-
-opentelemetry-instrumentation-sqlalchemy
-opentelemetry-instrumentation-psycopg2
-opentelemetry-instrumentation-redis
-
-## OpenTelemetry - Mensageria e Logs
-# aiokafka: Conecta traces entre produtores e consumidores de mensagens Kafka (Tracing Distribuído).
-# logging: Injeta automaticamente o trace_id em cada linha de log, permitindo cruzar logs com gráficos no Grafana.
-
-opentelemetry-instrumentation-aiokafka
-opentelemetry-instrumentation-logging
-
+Tracing over div click with correlection to backend services.
+![img.png](trace-grafana.png)

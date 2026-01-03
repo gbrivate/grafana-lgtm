@@ -25,7 +25,7 @@ spec:
           image: fastapi-mfe-test:1.0
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
+            - containerPort: 4200
           resources:
             requests:
               memory: 512Mi
@@ -46,8 +46,8 @@ spec:
   selector:
     app: fastapi-mfe-test
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 4200
+      targetPort: 4200
       name: http
 ---
 apiVersion: networking.k8s.io/v1
@@ -69,4 +69,4 @@ spec:
               service:
                 name: fastapi-mfe-test-service
                 port:
-                  number: 8080
+                  number: 4200

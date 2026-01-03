@@ -3,10 +3,7 @@ FROM apache/kafka:4.1.1
 WORKDIR /opt
 
 COPY otel_javaagent/opentelemetry-javaagent.jar /opt/opentelemetry-javaagent.jar
-COPY otel_javaagent/metrics.yaml /opt/kafka-custom.yaml
-
-RUN chown kafka:kafka opentelemetry-javaagent.jar kafka-custom.yaml
-USER kafka
+COPY otel_javaagent/kafka-custom-1.yaml /opt/kafka-custom.yaml
 
 # Standard Kafka Configuration (mostly kept as is)
 ENV TZ=America/Sao_Paulo \

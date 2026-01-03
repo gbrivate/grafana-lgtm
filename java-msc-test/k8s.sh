@@ -1,4 +1,5 @@
 #!/bin/bash
+clear
 docker image remove java-msc-test:1.0
 kubectl delete -n applications deployments.apps java-msc-test-deployment
 docker build --no-cache  --tag java-msc-test:1.0 .

@@ -9,7 +9,6 @@ import {
 } from '@opentelemetry/sdk-trace-web';
 
 import {OTLPTraceExporter} from '@opentelemetry/exporter-trace-otlp-http';
-import {B3Propagator} from '@opentelemetry/propagator-b3';
 
 import {
   MeterProvider,
@@ -24,8 +23,6 @@ import {SemanticResourceAttributes} from '@opentelemetry/semantic-conventions';
 import {getWebAutoInstrumentations} from '@opentelemetry/auto-instrumentations-web';
 
 import {onCLS, onLCP, onFID, onINP} from 'web-vitals';
-
-import {context, trace} from '@opentelemetry/api';
 
 /* ------------------------------------------------------------------ */
 /* Resource                                                           */
@@ -109,7 +106,7 @@ const metricExporter = new OTLPMetricExporter({
 
 const metricReader = new PeriodicExportingMetricReader({
   exporter: metricExporter,
-  exportIntervalMillis: 15000,
+  exportIntervalMillis: 30000,
 });
 
 const meterProvider = new MeterProvider({resource});

@@ -3,6 +3,9 @@ package com.lgtm.controller;
 import com.lgtm.dto.UserDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -45,4 +48,30 @@ public class HelloWorldController {
     public String test(@RequestBody UserDTO userDTO) {
         return "ok "+userDTO.getName();
     }
+
+    @GetMapping("/error")
+    public ResponseEntity<?> errorByStatus(
+        @RequestParam int status,
+        @RequestParam(required = false, defaultValue = "Custom error") String message) {
+            HttpStatus httpStatus;
+
+            try {
+                httpStatus = HttpStatus.valueOf(status);
+            } catch (IllegalArgumentException ex) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of(
+                                "error", "Invalid HTTP status code",
+                                "status", status
+                        ));
+            }
+
+            return ResponseEntity
+                    .status(httpStatus)
+                    .body(Map.of(
+                            "error", message,
+                            "status", httpStatus.value(),
+                            "reason", httpStatus.getReasonPhrase()
+                    ));
+        }
 }

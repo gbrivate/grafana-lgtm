@@ -45,24 +45,49 @@ The purpose is to demonstrate **complete monitoring, tracing, logging, metrics, 
 * Grafana dashboards visualize all services
 * Everything is deployed using standard Kubernetes YAML
 
+Below is a conceptual overview of the observability stack in this repository.
+
+                                User / Browser (http://www...)
+                                                |
+                                                |
+    +-------------------------------------------|-----------------------------------+
+    |  KUBERNETES CLUSTER                       v                                   |
+    |                                 +---------------------+                       |
+    |                                 |  Ingress Controller |                       |
+    |                                 +----------+----------+                       |
+    |                                            |                                  |         
+    |             _______________________________|_______________                   |
+    |             |                                             |                   |
+    |             |                                             v                   | 
+    |             |                      +---------------------------------------+  |
+    |             |                      |  LGTM Stack (grafana/otel-lgtm)       |  |
+    |             |                      |                                       |  |
+    |             |                      |  +-----------+      +--------------+  |  |
+    |             |                      |  | Grafana   |<---->| Prometheus   |  |  |
+    |             |                      |  | UI        |<---->| Tempo        |  |  |
+    |             v                      |  +-----------+      | Loki         |  |  |
+    |  +------------------------+        |                     +-------^------+  |  |
+    |  | Application Workloads  |        |                             |         |  |
+    |  |                        |        |                      +------+-------+ |  |
+    |  | [FastAPI] [SpringBoot] |        |                      | OTEL         | |  |
+    |  | [Postgres] [Kafka]     |        |                      +------+-------+ |  |
+    |  | [redis]   etc.         |        +--------+--------------------^---------+  |
+    |  +----------+-------------+                                      |            |
+    |             |                                                    |            |
+    |             +----(OTLP Telemetry: Logs, Metrics, Traces)---------+            |
+    |                                                                               |
+    +-------------------------------------------------------------------------------+
+
 ---
 
 ## 📦 Included Sample Applications
 
-### ✔ FastAPI
-Basic Python API instrumented with OpenTelemetry.
-
-### ✔ FastAPI + PostgreSQL
-API including database calls, demonstrating OTEL database instrumentation.
-
-### ✔ Spring Boot
-A Java microservice using OTEL Java Agent for auto‑instrumentation.
-
-### ✔ Apache Kafka
-Kafka broker + producers/consumers instrumented for distributed tracing.
-
-### ✔ PostgreSQL Database
-Running in a container inside the cluster.
+- FastAPI: Basic Python API instrumented with OpenTelemetry. 
+- FastAPI + PostgreSQL: API including database calls, demonstrating OTEL database instrumentation. 
+- Spring Boot: A Java microservice using OTEL Java Agent for auto‑instrumentation.
+- Apache Kafka: Kafka broker + producers/consumers instrumented for distributed tracing.
+- PostgreSQL Database: Running in a container inside the cluster.
+- Angular: Basic angular with OTEL instrumentation.
 
 ---
 
@@ -82,22 +107,10 @@ All services are accessible through a single ingress (e.g. `http://localhost/<se
 
 All observability signals are enabled:
 
-### 📈 Metrics
-Collected via OTEL SDK / Collector and scraped by Prometheus.
-
-### 📂 Logs
-Collected using OTEL logging exporter and stored in Loki.
-
-### 🔍 Traces
-Distributed tracing using OTLP → Tempo.
-
-### 🖥 Dashboards
-Grafana provides:
-
-* Application dashboards
-* Service maps
-* Trace waterfall views
-* Log aggregation views
+- 📈 Metrics: Collected via OTEL SDK / Collector and scraped by Prometheus.
+- 📂 Logs: Collected using OTEL logging exporter and stored in Loki.
+- 🔍 Traces: Distributed tracing using OTLP → Tempo.
+- 🖥 Dashboards: Grafana provides (Application dashboards, Service maps, Trace waterfall views, Log aggregation views )
 
 ---
 
@@ -122,106 +135,52 @@ This repository exists to provide a **complete, ready‑to‑use local observabi
 
 ---
 
-## 🧭 Architecture Diagram
-
-Below is a conceptual overview of the observability stack in this repository:
-
-                                User / Browser (http://www...)
-                                                |
-                                                |
-    +-------------------------------------------|-----------------------------------+
-    |  KUBERNETES CLUSTER                       v                                   |
-    |                                 +---------------------+                       |
-    |                                 |  Ingress Controller |                       |
-    |                                 +----------+----------+                       |
-    |                                            |                                  |         
-    |             _______________________________|_______________                   |
-    |             |                                             |                   |
-    |             |                                             v                   | 
-    |             |                      +---------------------------------------+ |
-    |             |                      |  LGTM Stack (grafana/otel-lgtm)       |  |
-    |             |                      |                                       |  |
-    |             |                      |  +-----------+      +--------------+  |  |
-    |             |                      |  | Grafana   |<---->| Prometheus   |  |  |
-    |             |                      |  | UI        |<---->| Tempo        |  |  |
-    |             v                      |  +-----------+      | Loki         |  |  |
-    |  +------------------------+        |                     +-------^------+  |  |
-    |  | Application Workloads  |        |                             |         |  |
-    |  |                        |        |                      +------+-------+ |  |
-    |  | [FastAPI] [SpringBoot] |        |                      | OTEL         | |  |
-    |  | [Postgres] [Kafka]     |        |                      +------+-------+ |  |
-    |  | [redis]                |        +--------+--------------------^---------+  |
-    |  +----------+-------------+                                      |            |
-    |             |                                                    |            |
-    |             +----(OTLP Telemetry: Logs, Metrics, Traces)---------+            |
-    |                                                                               |
-    +-------------------------------------------------------------------------------+
-
----
-
-## 🧩 Folder Structure 
+## 🧩 Folder Structure
 
 ```
-grafana-lgtm            # Root folder
+# All projects contains theses files:
+├── docker.sh       # Running container with docker only.
+├── k8s.sh          # Running build, load image into kind and run it into k8s
+├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
+├── k8s.yaml        # K8s deployment/service/ingress config.
+└── readme.md       # Readme.md extra line commands.
+
+how-to-observability    # Root folder
+│
+├── fastapi-mfe-test    # Angular app with OTEL sdk
 │
 ├── fastapi-msc-db      # FastAPI app with OTEL, Sqlalchemy, Postgres.
-│   ├── app/            # Python files, requirements etc.
-│   ├── docker.sh       # Running container with docker only.
-│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
-│   ├── k8s.yaml        # K8s deployment/service/ingress config.
-│   └── readme.md       # Readme.md for specific instructions.
+│   └── app/            # Python files, requirements etc.
 │
 ├── fastapi-msc-kafka   # FastAPI app with OTEL, custom metric, Kafka.
 │   ├── app/            # Python files, requirements etc.
-│   ├── test/           # Stress test Kafak and unit test.
-│   ├── docker.sh       # Running container with docker only.
-│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
-│   ├── k8s.yaml        # K8s deployment/service/ingress config.
-│   └── readme.md       # Readme.md for specific instructions.
+│   └── test/           # Stress test Kafak and unit test.
 │
 ├── fastapi-msc-test    # FastAPI app with OTEL, custom metric.
-│   ├── app/            # Python files, requirements etc.
-│   ├── docker.sh       # Running container with docker only.
-│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
-│   ├── k8s.yaml        # K8s deployment/service/ingress config.
-│   └── readme.md       # Readme.md for specific instructions.
+│   └── app/            # Python files, requirements etc.
 │
 ├── java-msc-test       # Spring boot app with OTEL
 │   ├── src/            # Source, controller, unit test etc.
 │   ├── test/           # Stress test
-│   ├── docker.sh       # Running container with docker only.
-│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
-│   ├── k8s.yaml        # K8s deployment/service/ingress config.
-│   ├── opentelemetry-javaagent-1.32.0.jar # For instrumentation, there is other ways to do it using maven libs etc. 
-│   └── readme.md       # Readme.md for specific instructions.
+│   └── opentelemetry-javaagent-1.32.0.jar # For instrumentation, there is other ways to do it using maven libs etc.
 │
 ├── kafka               # Apache kafka
-│   ├── config/         # Overwrite configs for kafka.
-│   ├── otel_javaagent/ # Java Agent jar, custom kafka metris.
-│   ├── docker.sh       # Running container with docker only.
-│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
-│   ├── k8s.yaml        # K8s deployment/service/ingress config. 
-│   └── readme.md       # Readme.md for specific instructions.
+│   ├── config/         # Overwrite configs for kafka. 
+│   └── otel_javaagent/ # Java Agent jar, custom kafka metris.
+│
+├── kind/               # Kind k8s locally
+│   ├── kind-config.yaml# Custom kind cluster
+│   └── config/         # Overwrite default configs (grafana, loki, otel, prometheus and tempo).
 │
 ├── lgtm/               # Grafana+OTEL stack
 │   ├── boards/         # Custom boards.
-│   ├── config/         # Overwrite default configs (grafana, loki, otel, prometheus and tempo).
-│   ├── docker.sh       # Running container with docker only.
-│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
-│   ├── k8s.yaml        # K8s deployment/service/ingress config. 
-│   └── readme.md       # Readme.md for specific instructions.
+│   └── config/         # Overwrite default configs (grafana, loki, otel, prometheus and tempo).
 │
 ├── postgresql/         # PostgresSQL 
 │   ├── boards/         # Custom boards.
-│   ├── config/         # Overwrite default configs
-│   ├── docker.sh       # Running container with docker only.
-│   ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
-│   ├── k8s.yaml        # K8s deployment/service/ingress config. 
-│   └── readme.md       # Readme.md for specific instructions.
+│   └── config/         # Overwrite default configs
 │
 ├── .gitignore          
-├──  grafana.png        # Grafana dashboard image
-├──  kind-config.yaml   # Custom kind cluster
 └──  readme.md
 ```
 ---
@@ -230,9 +189,13 @@ grafana-lgtm            # Root folder
 
 ### 1️⃣ Create the KinD Cluster
 
+https://kind.sigs.k8s.io/docs/user/quick-start/
+
 ```
-kind create cluster --config kind-config.yaml
-## After cluster created, run "kubectl get pods -ALL" you should get these pods running
+kind create cluster --config kind/kind-config.yaml
+## After while, the cluster is created.
+# run "kubectl get pods -ALL" you should get these pods running
+kubectl get pods -ALL
 NAMESPACE            NAME                                         READY   STATUS    RESTARTS   AGE  
 kube-system          coredns-668d6bf9bc-9dcmg                     1/1     Running   0          47s   
 kube-system          coredns-668d6bf9bc-g2ck6                     1/1     Running   0          47s
@@ -282,8 +245,26 @@ This document explains the purpose of common system Pods found in a Kubernetes c
 
 ### 2️⃣ Install NGINX Ingress Controller
 
+https://kind.sigs.k8s.io/docs/user/ingress/
+
 ```
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.0/deploy/static/provider/kind/deploy.yaml
+```
+Just for clarification, here is ingress-nginx using Helm (Kind-compatible).
+- Chart version 4.11.0 corresponds to controller v1.11.0
+- Ports 30080/30443 are commonly used with kind (adjust if needed
+- publishService.enabled=false is required for kind
+
+```
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --version 4.11.0 \
+  --set controller.kind=Deployment \
+  --set controller.hostNetwork=true \
+  --set controller.service.type=NodePort \
+  --set controller.service.nodePorts.http=80 \
+  --set controller.service.nodePorts.https=443 \
+  --set controller.publishService.enabled=false
 ```
 
 Wait for it:
@@ -300,6 +281,8 @@ Test http://localhost you should get "404 Not Found nginx" from nginx controller
 Before we instrument k8s, let's deploy a simple FastAPI app with some endpoints and expose it via ingress controller.
 
 ### 3️⃣ Deploying LGTM (Grafana + OTEL)
+
+https://grafana.com/docs/opentelemetry/docker-lgtm/
 
 We are going to use this docker image 'grafana/otel-lgtm:0.12.0' which has all ini one, nice to run locally (not production setup):
 ```
@@ -352,7 +335,7 @@ grafana-deployment-8458dd4b69-k27x9   1/1     Running   0          15s
 
 Open browser at http://localhost/grafana (admim/admin) then you should see that:
 
-![Grafana home page](grafana.png)
+![Grafana home page](lgtm/images/grafana.png)
 
 So far we got running:
 
@@ -362,7 +345,7 @@ So far we got running:
 
 With all tools in place, let's instrument it all.
 
-## There Two-level visibility:
+## There Two-level observability:
 
 - Application observability → what happens within your code (business logic, requests, errors).
 - Platform observability → what happens around your code (Kubernetes, network, resources, infrastructure).
@@ -421,8 +404,7 @@ Yes, in most real setups. They are **complementary**, not overlapping.
 - **OpenTelemetry Operator** → *How your applications behave*
 - **kube-state-metrics** → *What Kubernetes is doing*
 
-
-### Installing OpenTelemetry Operator with cert-manager 
+### Installing OpenTelemetry Operator with cert-manager
 
 ```
 helm repo add jetstack https://charts.jetstack.io
@@ -446,7 +428,7 @@ helm install otel-operator open-telemetry/opentelemetry-operator \
   --create-namespace
 ```
 
-### Installing OpenTelemetry Operator (without Cert-manager)
+### Or Installing OpenTelemetry Operator (without Cert-manager)
 ```
 # In case any trouble  uninstall and install again.
 helm uninstall otel-operator -n opentelemetry-operator-system
@@ -458,7 +440,7 @@ helm install otel-operator open-telemetry/opentelemetry-operator \
   --set admissionWebhooks.create=false \
   --set-string manager.env.ENABLE_WEBHOOKS=false
 ```
-  
+
 ```
 # Verify the instalation
  kubectl get pods -n opentelemetry-operator-system
@@ -634,16 +616,16 @@ configmap/otelcol-config     1      31m
 
 Go to http://localhost/grafana/drilldown -> click logs, you see logs from k8s, sooner we deploy any app will be displayed as well.
 
-![k8s-logs.png](k8s-logs.png)
+![k8s-logs.png](lgtm/images/k8s-logs.png)
 
 Go to http://localhost/grafana/drilldown -> click metrics, you'll see metrics starting with k8s_*, kube_*, container_* etc.
 
-![k8s-metrics.png](k8s-metrics.png)
+![k8s-metrics.png](lgtm/images/k8s-metrics.png)
 
 Here a list of metrics you can play around and create your board [k8s-metrics.txt](lgtm/boards/k8s/k8s-metrics.txt)
 
 Here is Cluster overview dashboard
-![k8s-cluster-overview.png](k8s-cluster-overview.png)
+![k8s-cluster-overview.png](lgtm/images/k8s-cluster-overview.png)
 
 Now it's time to instrument some apps
 
@@ -674,26 +656,23 @@ If you check [Dockerfile](fastapi-msc-test/Dockerfile) you will some ENV set up 
 ```docker
 # Core environment variables for OpenTelemetry
 ENV OTEL_SERVICE_NAME=fastapi-msc-test \
-    OTEL_LOG_LEVEL=warning \
-    OTEL_PYTHON_INSTRUMENTATION_FASTAPI_ENABLED=true \
-    OTEL_PYTHON_INSTRUMENTATION_HTTP_ENABLED=true \
-    OTEL_METRIC_EXPORT_INTERVAL=5000 \
-    OTEL_METRIC_EXPORT_TIMEOUT=5000 \
-    OTEL_EXPORTER_OTLP_COMPRESSION=gzip \
-    OTEL_EXPORTER_OTLP_PROTOCOL=grpc \
-    OTEL_EXPORTER_OTLP_INSECURE=true \
-    OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://grafana-service.monitoring.svc.cluster.local:4317 \
-    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://grafana-service.monitoring.svc.cluster.local:4317 \
-    OTEL_PYTHON_FASTAPI_EXCLUDED_URLS="health,metrics,healthz" \
     OTEL_RESOURCE_ATTRIBUTES="service.version=1.0,deployment.environment=development,team=my-team" \
-    TZ=America/Sao_Paulo
+    OTEL_EXPORTER_OTLP_COMPRESSION=gzip \
+    OTEL_EXPORTER_OTLP_INSECURE=true \
+    OTEL_EXPORTER_OTLP_ENDPOINT=grafana-service.monitoring.svc.cluster.local:4317 \
+    OTEL_LOGS_EXPORTER=none \
+    OTEL_PYTHON_FASTAPI_EXCLUDED_URLS="health,metrics,healthz" \
+    OTEL_TRACES_SAMPLER=parentbased_traceidratio \
+    OTEL_TRACES_SAMPLER_ARG=0.05 \
+    OTEL_METRIC_EXPORT_INTERVAL=15000 \
+    OTEL_METRIC_EXPORT_TIMEOUT=5000
 ```
 
 ** we are not sending logs, because we already have it via k8s instrumentation.
 
-There is a plenty of option for the OTEL core, and for specifics stacks.
-<br><br>
-[OTEL - Core](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables)<br> 
+### There is a plenty of option for the OTEL core, and for specifics stacks.
+
+[OTEL - Core](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables)<br>
 [OTEL - Python](https://opentelemetry.io/docs/zero-code/python/configuration)<br>
 [OTEL - Java](https://opentelemetry.io/docs/zero-code/java/)<br>
 [OTEL - Js](https://opentelemetry.io/docs/zero-code/js/)
@@ -738,7 +717,7 @@ curl --location 'http://localhost/fastapi/error?code=422'
 ```
 Here is logs via k8s instrumentation of FastAPI app test.
 
-![fastapi-test-logs.png](fastapi-test-logs.png)
+![fastapi-test-logs.png](lgtm/images/fastapi-test-logs.png)
 
 
 OK, we got k8s running, first app running, grafana, working through ingress controller, instrumentation, so far so good. ✅
@@ -761,28 +740,19 @@ Playing around as your needs.
 
 📊 FastAPI Board
 
-![fastapi-k8s-board.png](fastapi-k8s-board.png)
+![fastapi-k8s-board.png](lgtm/images/fastapi-k8s-board.png)
 
 This board can be found here [fastapi-k8s-board.json](lgtm/boards/fastapi/fastapi-k8s-board.json)
 
+## More instrumentation samples
 
-## 🎯 Key Observability Features Demonstrated
-
-### 🔹 **Automatic Tracing** across microservices
-
-* Kafka → FastAPI
-* FastAPI → PostgreSQL
-* FastAPI → other services
-* Spring Boot → Kafka → DB
-
-### 🔹 **Logs correlated with Traces** using Loki
-
-### 🔹 **Metrics for all workloads** (HTTP, JVM, DB, Kafka, Python, etc.)
-
-### 🔹 **Service Graphs generated by Tempo + Grafana**
-
-### 🔹 **Dashboards using Prometheus metrics**
-
+ - Angular instrumentation [fastapi-mfe-test](fastapi-mfe-test)
+ - FastAPI + PostgreSQL [fastapi-msc-db](fastapi-msc-db)
+ - FastAPI + Kafka [fastapi-msc-kafka](fastapi-msc-kafka)
+ - Spring boot (java) [java-msc-test](java-msc-test)
+ - Kafka Cluster [kafka](kafka)
+ - Postgresql [postgresql](postgresql)
+ - K8s [k8s](k8s)
 ---
 
 ## 🧪 Load Testing Examples

@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8080;
+const PORT = 4200;
 // Change 'my-app/browser' to match your actual dist folder structure
 const DIST_PATH = path.join(__dirname, 'dist/fastapi-mfe-test/browser');
 

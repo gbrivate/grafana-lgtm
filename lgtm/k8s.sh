@@ -7,6 +7,9 @@ NAMESPACE="monitoring"
 DEPLOYMENT="grafana-deployment"
 LABEL_SELECTOR="app=lgtm"   # adjust if needed
 
+docker build --no-cache --tag lgtm:1.0 .
+kind load docker-image lgtm:1.0
+
 clear
 echo "Deleting deployment: $DEPLOYMENT ..."
 kubectl delete -n "$NAMESPACE" deployment "$DEPLOYMENT" || true

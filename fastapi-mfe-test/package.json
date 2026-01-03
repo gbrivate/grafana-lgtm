@@ -5,7 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "build_prd": "ng build  --configuration development --base-href /fastapi-mfe-test/",
+    "build_prd": "ng build  --configuration production --base-href /fastapi-mfe-test/",
     "server": "node server.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -23,7 +23,7 @@
     ]
   },
   "private": true,
-  "packageManager": "npm@11.6.2",
+  "packageManager": "pnpm@9.0.0",
   "dependencies": {
     "@angular/common": "^21.0.0",
     "@angular/compiler": "^21.0.0",
@@ -33,6 +33,7 @@
     "@angular/router": "^21.0.0",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/auto-instrumentations-web": "0.41.0",
+    "@opentelemetry/core": "^2.2.0",
     "@opentelemetry/exporter-metrics-otlp-http": "0.53.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.53.0",
     "@opentelemetry/instrumentation": "0.53.0",

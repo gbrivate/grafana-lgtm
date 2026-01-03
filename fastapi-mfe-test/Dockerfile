@@ -4,40 +4,39 @@
 ARG NODE_VERSION=20-alpine
 ARG NGINX_VERSION=alpine3.22
 
-# Use a lightweight Node.js image for building (customizable via ARG)
 FROM node:${NODE_VERSION} AS builder
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package-related files first to leverage Docker's caching mechanism
-COPY package.json package-lock.json ./
 
-# Install project dependencies using npm ci (ensures a clean, reproducible install)
-RUN npm ci --legacy-peer-deps
+# Copy only dependency manifests (better cache)
+COPY package.json pnpm-lock.yaml ./
 
+# Enable pnpm via corepack
+RUN corepack enable
 
-# Copy the rest of the application source code into the container
+# Install dependencies (deterministic & fast)
+RUN pnpm install --frozen-lockfile
+
+# Copy application source
 COPY . .
 
-# Build the Angular application
-RUN npm run build_prd
+# Build Angular app
+RUN pnpm run build_prd
+
 
 # =========================================
-# Stage 2: Prepare Nginx to Serve Static Files
+# Stage 2: Nginx runtime
 # =========================================
-
 FROM nginxinc/nginx-unprivileged:${NGINX_VERSION} AS runner
 
-# Use a built-in non-root user for security best practices
 USER nginx
 
-# Copy custom Nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy the static build output from the build stage to Nginx's default HTML serving directory
-COPY --chown=nginx:nginx --from=builder /app/dist/fastapi-mfe-test/browser /usr/share/nginx/html/fastapi-mfe-test
+COPY --chown=nginx:nginx \
+  --from=builder \
+  /app/dist/fastapi-mfe-test/browser \
+  /usr/share/nginx/html/fastapi-mfe-test
 
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
-
