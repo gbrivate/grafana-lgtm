@@ -41,6 +41,14 @@ rules:
     resources:
       - horizontalpodautoscalers # <--- ADDED: Fixes HorizontalPodAutoscaler error
     verbs: ["get", "list", "watch"]
+
+  # Networking API
+  - apiGroups: [ "networking.k8s.io" ]
+    resources: [ "ingresses" ]
+    verbs: [ "get", "list", "watch" ]
+
+  - nonResourceURLs: [ "/metrics" ]
+    verbs: [ "get" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

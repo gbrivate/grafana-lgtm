@@ -20,7 +20,9 @@ spec:
       labels:
         app: lgtm
     spec:
+      # K8s instrumentation
       serviceAccountName: lgtm-sa
+
       containers:
         - name: lgtm
           image: lgtm:1.0
@@ -78,41 +80,46 @@ spec:
             - name: GF_LOG_FILTERS
               value: "rendering:info"
           volumeMounts:
-            - name: otelcol-config
-              mountPath: /otel-lgtm/otelcol-config.yaml
-              subPath: otelcol-config.yaml
-            - name: loki-config
-              mountPath: /otel-lgtm/loki-config.yaml
-              subPath: loki-config.yaml
-#            - name: tempo-config
-#              mountPath: /otel-lgtm/tempo-config.yaml
-#              subPath: tempo-config.yaml
-            - name: prometheus-config
-              mountPath: /otel-lgtm/prometheus/prometheus.yml
-              subPath: prometheus.yml
+            # K8s instrumentation
             - name: varlogpods
               mountPath: /var/log/pods
               readOnly: true
             - name: varlibdockercontainers
               mountPath: /var/lib/docker/containers
               readOnly: true
-      # In your Pod/Deployment/DaemonSet spec
+
+             # container original files location where will be replaces via config map referenced on volumes.
+            - name: otelcol-config
+              mountPath: /otel-lgtm/otelcol-config.yaml
+              subPath: otelcol-config.yaml
+#            - name: loki-config
+#              mountPath: /otel-lgtm/loki-config.yaml
+#              subPath: loki-config.yaml
+#            - name: tempo-config
+#              mountPath: /otel-lgtm/tempo-config.yaml
+#              subPath: tempo-config.yaml
+#            - name: prometheus-config
+#              mountPath: /otel-lgtm/prometheus/prometheus.yml
+#              subPath: prometheus.yml
       volumes:
+        # K8s instrumentation
         - name: varlogpods
           hostPath:
             path: /var/log/pods
         - name: varlibdockercontainers # Sometimes needed for symlinks
           hostPath:
             path: /var/lib/docker/containers
+
+         # custom config of grafana lgtm that will be apply inside of container over original files.
         - name: otelcol-config
           configMap:
             name: otelcol-config
-        - name: prometheus-config
-          configMap:
-            name: prometheus-config
-        - name: loki-config
-          configMap:
-            name: loki-config
+#        - name: prometheus-config4
+#          configMap:
+#            name: prometheus-config
+#        - name: loki-config
+#          configMap:
+#            name: loki-config
 #        - name: tempo-config
 #          configMap:
 #            name: tempo-config

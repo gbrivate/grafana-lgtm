@@ -140,7 +140,7 @@ This repository exists to provide a **complete, ready‑to‑use local observabi
 ```
 # All projects contains theses files:
 ├── docker.sh       # Running container with docker only.
-├── k8s.sh          # Running build, load image into kind and run it into k8s
+├── k8s.sh          # Docker build, load image into kind and run it into k8s
 ├── Dockerfile      # Dockerfile to build image with custom OTEL setup.
 ├── k8s.yaml        # K8s deployment/service/ingress config.
 └── readme.md       # Readme.md extra line commands.
@@ -192,6 +192,7 @@ how-to-observability    # Root folder
 https://kind.sigs.k8s.io/docs/user/quick-start/
 
 ```
+# Creating kind cluster using custom config.
 kind create cluster --config kind/kind-config.yaml
 ## After while, the cluster is created.
 # run "kubectl get pods -ALL" you should get these pods running
@@ -206,6 +207,12 @@ kube-system          kube-controller-manager-kind-control-plane   1/1     Runnin
 kube-system          kube-proxy-j6cdq                             1/1     Running   0          47s
 kube-system          kube-scheduler-kind-control-plane            1/1     Running   0          52s
 local-path-storage   local-path-provisioner-58cc7856b6-csxxx      1/1     Running   0          47s
+```
+
+In case any thouble delete and recreate the cluster
+```
+kind get clusters     
+kind delete cluster
 ```
 
 ### Kubernetes System Pods Overview
@@ -248,34 +255,55 @@ This document explains the purpose of common system Pods found in a Kubernetes c
 https://kind.sigs.k8s.io/docs/user/ingress/
 
 ```
+# Install strainght from kind config using kubectl.
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.0/deploy/static/provider/kind/deploy.yaml
-```
-Just for clarification, here is ingress-nginx using Helm (Kind-compatible).
-- Chart version 4.11.0 corresponds to controller v1.11.0
-- Ports 30080/30443 are commonly used with kind (adjust if needed
-- publishService.enabled=false is required for kind
 
-```
-helm install ingress-nginx ingress-nginx/ingress-nginx \
-  --namespace ingress-nginx \
-  --version 4.11.0 \
-  --set controller.kind=Deployment \
-  --set controller.hostNetwork=true \
-  --set controller.service.type=NodePort \
-  --set controller.service.nodePorts.http=80 \
-  --set controller.service.nodePorts.https=443 \
-  --set controller.publishService.enabled=false
-```
-
-Wait for it:
-
-```
+# After installed, Wait for it:
 kubectl get pods -n ingress-nginx
 NAME                                        READY   STATUS      RESTARTS   AGE
 ingress-nginx-admission-create-th4m7        0/1     Completed   0          97s
 ingress-nginx-admission-patch-cjlv4         0/1     Completed   2          97s
 ingress-nginx-controller-77cdd96884-qcmb2   1/1     Running     0          97s
 ```
+
+Just for clarification, below is the ingress-nginx using Helm (Kind-compatible).
+- Chart version 4.11.0 corresponds to controller v1.11.0
+- Ports 30080/30443 are commonly used with kind (adjust if needed publishService.enabled=false is required for kind)
+
+```
+# Or install via helm chart.
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx --create-namespace \
+  --set controller.service.type=NodePort \
+  --set controller.service.nodePorts.http=30080 \
+  --set controller.service.nodePorts.https=30443 \
+  --set-string controller.nodeSelector.ingress-ready=true \
+  --set controller.service.externalTrafficPolicy=Local \
+  --set controller.watchIngressWithoutClass=true
+
+
+# Check the instalation
+helm list -n ingress-nginx
+
+# You should see this
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
+ingress-nginx   ingress-nginx   1               2026-01-03 16:13:13.955071 -0300 -03    deployed        ingress-nginx-4.11.0    1.11.0
+
+# Check the pods     
+kubectl get pods -n ingress-nginx
+NAME                                      READY   STATUS    RESTARTS   AGE
+ingress-nginx-controller-74477b76-v2zk5   1/1     Running   0          36s
+
+# Uninstall in case any trouble and try again or use the kubectl option.
+helm uninstall ingress-nginx -n ingress-nginx
+
+```
+
+
 
 Test http://localhost you should get "404 Not Found nginx" from nginx controller setup, which is ok.
 Before we instrument k8s, let's deploy a simple FastAPI app with some endpoints and expose it via ingress controller.
@@ -323,15 +351,15 @@ kind load docker-image lgtm:1.0
 # Create a k8s namespace 'monitoring', it's important create namespace and keep things separated
 kubectl create namespace monitoring
 
-# Applying k8s configs
+# Applying k8s configs (here we also ensure the namepsace creation in case it did not created yet).
 kubectl apply -f k8s.yaml
 
-# Verify if pod is runing
-kubectl get -n monitoring pods
+# Verify if pod is runing, it can take some time, so wait for it.
+kubectl get pods -n monitoring 
 NAME                                  READY   STATUS    RESTARTS   AGE
 grafana-deployment-8458dd4b69-k27x9   1/1     Running   0          15s
 ```
-** In order to run all of this commands above once, there is k8s.sh, but it's recommended run one by one first time.
+** In order to run all of this commands above once, there is k8s.sh script, but it's recommended run one by one first time for learning purpose.
 
 Open browser at http://localhost/grafana (admim/admin) then you should see that:
 
@@ -352,19 +380,19 @@ With all tools in place, let's instrument it all.
 
 You don't need to choose between instrumenting Kubernetes or an application;
 ideally, you should combine both, each with a specific purpose.
-- Logs - getting from k8s instrumentation (of course metrics of k8s is also here).
-- Metrics/traces - getting from app via OTE.
+- Logs - getting from k8s instrumentation straight from pods and send them via OTEL.
+- Metrics/traces - getting from app via OTEL
 
 
 ## K8s Instrumentation
 
-One of the best way to instrument Kubernetes (K8s) using OpenTelemetry (Otel) for collecting logs, traces, and metrics is by leveraging the OpenTelemetry Operator combined with the OpenTelemetry Collector.
+One of the best way to instrument Kubernetes (K8s) using OpenTelemetry (Otel) for collecting logs, traces, and metrics 
+is by leveraging the OpenTelemetry Operator combined with the OpenTelemetry Collector.
 
 This approach:
 - Centralizes configuration
 - Automates collection
 - Separates the concerns of data collection from application code, which is ideal for a dynamic container environment like Kubernetes.
-
 
 Let's clarify some understanding.
 
@@ -404,7 +432,7 @@ Yes, in most real setups. They are **complementary**, not overlapping.
 - **OpenTelemetry Operator** → *How your applications behave*
 - **kube-state-metrics** → *What Kubernetes is doing*
 
-### Installing OpenTelemetry Operator with cert-manager
+### Option 1 - Installing OpenTelemetry Operator with cert-manager
 
 ```
 helm repo add jetstack https://charts.jetstack.io
@@ -428,10 +456,11 @@ helm install otel-operator open-telemetry/opentelemetry-operator \
   --create-namespace
 ```
 
-### Or Installing OpenTelemetry Operator (without Cert-manager)
+### Option 2 - Installing OpenTelemetry Operator (without Cert-manager)
 ```
-# In case any trouble  uninstall and install again.
-helm uninstall otel-operator -n opentelemetry-operator-system
+# Add the Helm repository
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+helm repo update
 
 # Install wihtout cert-manager
 helm install otel-operator open-telemetry/opentelemetry-operator \
@@ -439,11 +468,12 @@ helm install otel-operator open-telemetry/opentelemetry-operator \
   --create-namespace \
   --set admissionWebhooks.create=false \
   --set-string manager.env.ENABLE_WEBHOOKS=false
-```
+  
+# In case any trouble uninstall and install again.
+helm uninstall otel-operator -n opentelemetry-operator-system
 
-```
 # Verify the instalation
- kubectl get pods -n opentelemetry-operator-system
+kubectl get pods -n opentelemetry-operator-system
 NAME                                                    READY   STATUS    RESTARTS   AGE
 otel-operator-opentelemetry-operator-7f55bcdbff-d4t5z   2/2     Running   0          23s
 ```
@@ -531,62 +561,94 @@ ingress-nginx   job.batch/ingress-nginx-admission-patch    Complete   1/1       
 
 We got all the K8s instrumentation installed, now we need to set up Open telemetry to receiver and send traces/logs/metrics to grafana lgtm stack.
 
-### 4️⃣ Configuring Otel to receiver and send data to grafana lgtm stack.
+### Configuring Otel to receiver and send data to grafana lgtm stack.
 
 Two ways to change/overwriting the otel default config inside of grafana/otel-lgtm image, you could do:
 
-Via Docker file
+Via Docker file by overwriting the default file, but we need to build every time the docker image after any change.
 ```docker
 COPY otel/otelcol-config-postgres.yaml /otel-lgtm/otelcol-config.yaml
 ``` 
-Or via Configmap/service account
+Or via Configmap/service account which is a better way to apply it.
 [config-map.yaml](lgtm/config/otel/otel-config-map.yaml) and [rbac-otel.yaml](lgtm/config/otel/rbac-otel.yaml)
 
-Inside of [k8s.yaml](lgtm/k8s.yaml) uncommnet this parts:
+Inside of [k8s.yaml](lgtm/k8s.yaml) uncomment or add this parts (spec.template.spec.serviceAccountName: lgtm-sa):
 ```
-# serviceAccountName: lgtm-sa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lgtm
+  template:
+    metadata:
+      labels:
+        app: lgtm
+    spec:      
+      serviceAccountName: lgtm-sa # --> K8s instrumentation, in order to work, a rbac rules must be apllied.
 ```
 
-and this:
+and this, in order to get logs/metrics/traces:
 ```
-#          volumeMounts:
-#            - name: otelcol-config
-#              mountPath: /otel-lgtm/otelcol-config.yaml
-#              subPath: otelcol-config.yaml
-#            - name: varlogpods
-#              mountPath: /var/log/pods
-#              readOnly: true
-#            - name: varlibdockercontainers
-#              mountPath: /var/lib/docker/containers
-#              readOnly: true
-#      # In your Pod/Deployment/DaemonSet spec
-#      volumes:
-#        - name: varlogpods
-#          hostPath:
-#            path: /var/log/pods
-#        - name: varlibdockercontainers # Sometimes needed for symlinks
-#          hostPath:
-#            path: /var/lib/docker/containers
-#        - name: otelcol-config
-#          configMap:
-#            name: otelcol-config
+          env:
+            # --- K8s instrumentation ---
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: K8S_CLUSTER_NAME
+              value: "kind"  # Set your cluster name
+```
+Also this, remember we are running k8s locally inside of kind docker container, so all logs is inside of it.
+
+```
+          volumeMounts:
+            # K8s instrumentation, getting logs from pdos.
+            - name: varlogpods
+              mountPath: /var/log/pods
+              readOnly: true
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+
+             # container original files location where will be replaces via config map referenced on volumes.
+            - name: otelcol-config
+              mountPath: /otel-lgtm/otelcol-config.yaml
+              subPath: otelcol-config.yaml
+
+      volumes:
+        # K8s instrumentation
+        - name: varlogpods
+          hostPath:
+          path: /var/log/pods
+        - name: varlibdockercontainers # Sometimes needed for symlinks
+          hostPath:
+          path: /var/lib/docker/containers
+
+         # custom config of grafana lgtm that will be apply inside of container overwriting original file.
+        - name: otelcol-config
+          configMap:
+            name: otelcol-config                 
 ```
 
 What does it do?
 
 - Create a service account, cluster rules in order to access k8s using rbac
-- Overwriting the otel config to receive and send data to grafana lgtm (Loki, Tempo and Prometheus)
+- Overwriting the OTEL config to receive and send data to grafana lgtm (Loki, Tempo and Prometheus)
 
 Let's applying the changes and restart the grafana deployment.
 ```
 cd lgtm
-# Apply config-map config
-kubectl apply -f config-map.yaml
+# Apply config-map file
+kubectl apply -f ./config/otel/otel-config-map.yaml
 
-# Apply rbac allowing otel 
-kubectl apply -f rbac-otel.yaml
+# Applying RBA rules in order to get permissions to access and read files.
+kubectl apply -f ./config/otel/rbac-otel.yaml
 
-# Change the grafana k8s config
+# Re-apply k8s deployment configs again.
 kubectl apply -f k8s.yaml
 
 # restart the grafana deplyoment
@@ -594,24 +656,24 @@ kubectl rollout restart -n monitoring deployment grafana-deployment
 
 # After while, verify it
 kubectl get all,configmap -n monitoring
-NAME                                      READY   STATUS    RESTARTS   AGE
-pod/grafana-deployment-6f47f4d485-f57vg   1/1     Running   0          3m29s
+NAME                                      READY   STATUS        RESTARTS   AGE
+pod/grafana-deployment-65cf7f99b-2wgqd    1/1     Terminating   0          39s
+pod/grafana-deployment-756bdf5c65-8zz6c   1/1     Running       0          14s
 
-NAME                      TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                               AGE
-service/grafana-service   ClusterIP   10.96.148.62   <none>        3000/TCP,4318/TCP,4317/TCP,9090/TCP   3h35m
+NAME                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE
+service/grafana-service   ClusterIP   10.96.189.170   <none>        3000/TCP,4318/TCP,4317/TCP,9090/TCP   15h
 
 NAME                                 READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/grafana-deployment   1/1     1            1           3h35m
+deployment.apps/grafana-deployment   1/1     1            1           15h
 
 NAME                                            DESIRED   CURRENT   READY   AGE
-replicaset.apps/grafana-deployment-6f47f4d485   1         1         1       3m30s
-replicaset.apps/grafana-deployment-85d6f74fbf   0         0         0       29m
-replicaset.apps/grafana-deployment-865d74c68b   0         0         0       3m34s
-replicaset.apps/grafana-deployment-c7777965c    0         0         0       3h35m
+replicaset.apps/grafana-deployment-5586486895   0         0         0       15h
+replicaset.apps/grafana-deployment-65cf7f99b    0         0         0       39s
+replicaset.apps/grafana-deployment-756bdf5c65   1         1         1       14s
 
 NAME                         DATA   AGE
-configmap/kube-root-ca.crt   1      3h35m
-configmap/otelcol-config     1      31m
+configmap/kube-root-ca.crt   1      15h
+configmap/otelcol-config     1      64s
 ```
 
 Go to http://localhost/grafana/drilldown -> click logs, you see logs from k8s, sooner we deploy any app will be displayed as well.
@@ -629,7 +691,7 @@ Here is Cluster overview dashboard
 
 Now it's time to instrument some apps
 
-### 4️⃣ Instrumenting FastAPI app using Otel modules
+### Instrumenting FastAPI app using OTEL modules
 we are going to use some of these modules below to instrument FastAPI apps, use it accordingly.
 ```
 # Must have
@@ -637,7 +699,13 @@ opentelemetry-distro                            # Provides the OTEL SDK + API.
 opentelemetry-exporter-otlp                     # Allows exporting through OTLP (HTTP/gRPC).
 opentelemetry-instrumentation-logging           # This one injects trace_id and span_id into your logs automatically.
 
-# Option is you are using one of these modules
+```
+### Extra OTEL modules
+- Do I need them? depends, if you run the auto instrumentation command like this "RUN opentelemetry-bootstrap -a=install" on dockerfile.
+- These modules will be pick up automatically based on the main modules.
+- For example, for `fastapi` the `opentelemetry-instrumentation-fastapi` will be installed and so on.
+- So, should I add it? Unless we are not running the bootstrap command inside Dockerfile, yes, or even for organisation purpose.
+```
 opentelemetry-instrumentation-fastapi            # Auto-instruments FastAPI routes.
 opentelemetry-instrumentation-asyncio            # Helps propagate OTEL context between asyncio tasks — recommended but not required.
 opentelemetry-instrumentation-aiohttp-client     # Auto-instruments aiohttp client calls.
@@ -651,7 +719,8 @@ opentelemetry-instrumentation-psycopg2           # Auto-instruments PostgreSQL c
 opentelemetry-instrumentation-redis              # Auto-instruments Redis client operations.
 ```
 
-If you check [Dockerfile](fastapi-msc-test/Dockerfile) you will some ENV set up the auto-instrument.
+### Auto instrumentation via Dockerfile
+If you check [Dockerfile](fastapi-msc-test/Dockerfile) you will some ENV that set up the auto-instrument using OTEL.
 
 ```docker
 # Core environment variables for OpenTelemetry
@@ -668,7 +737,7 @@ ENV OTEL_SERVICE_NAME=fastapi-msc-test \
     OTEL_METRIC_EXPORT_TIMEOUT=5000
 ```
 
-** we are not sending logs, because we already have it via k8s instrumentation.
+** Remember, we are not sending logs, because we already have it via k8s instrumentation.
 
 ### There is a plenty of option for the OTEL core, and for specifics stacks.
 
@@ -677,7 +746,7 @@ ENV OTEL_SERVICE_NAME=fastapi-msc-test \
 [OTEL - Java](https://opentelemetry.io/docs/zero-code/java/)<br>
 [OTEL - Js](https://opentelemetry.io/docs/zero-code/js/)
 
-### 5️⃣  Deploy Sample Applications "[fastapi-msc-test](fastapi-msc-test)"
+### Deploy Sample Applications "[fastapi-msc-test](fastapi-msc-test)"
 
 ```
 # Let's build the docker image and deploy it into k8s
@@ -703,7 +772,7 @@ kubectl logs -n applications deployments/fastapi-msc-test-deployment
 kubectl rollout restart -n applications deployment fastapi-msc-test-deployment
 
 # test using curl 
-curl http://localhost/fastapi/hello?name=test
+curl http://localhost/fastapi/hello?name=John
 {"hello":"test"} 
 
 curl --location 'http://localhost/fastapi/rolldice?player=test'
