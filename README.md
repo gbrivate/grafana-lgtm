@@ -187,7 +187,7 @@ how-to-observability    # Root folder
 
 ## 🔧 Setup Guide (Step-by-Step)
 
-### 1️⃣ Create the KinD Cluster
+### Create the KinD Cluster
 
 https://kind.sigs.k8s.io/docs/user/quick-start/
 
@@ -250,7 +250,7 @@ This document explains the purpose of common system Pods found in a Kubernetes c
 
 ---
 
-### 2️⃣ Install NGINX Ingress Controller
+### Install NGINX Ingress Controller
 
 https://kind.sigs.k8s.io/docs/user/ingress/
 
@@ -308,7 +308,7 @@ helm uninstall ingress-nginx -n ingress-nginx
 Test http://localhost you should get "404 Not Found nginx" from nginx controller setup, which is ok.
 Before we instrument k8s, let's deploy a simple FastAPI app with some endpoints and expose it via ingress controller.
 
-### 3️⃣ Deploying LGTM (Grafana + OTEL)
+### Deploying LGTM (Grafana + OTEL)
 
 https://grafana.com/docs/opentelemetry/docker-lgtm/
 
@@ -791,7 +791,7 @@ Here is logs via k8s instrumentation of FastAPI app test.
 
 OK, we got k8s running, first app running, grafana, working through ingress controller, instrumentation, so far so good. ✅
 
-### 6️⃣ Let's create a dashboard for a FastAPI app.
+### Let's create a dashboard for a FastAPI app.
 
 The main metrics to monitor are:
 - Total request per status code
