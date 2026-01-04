@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger("fastapi-msc-kafka")
 LOG.info("API is starting up")
 
-KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
+KAFKA_BOOTSTRAP_SERVERS = "kafka-service.applications.svc.cluster.local:9092"
 TOPIC_NAME = "test-topic"
 
 producer: AIOKafkaProducer | None = None

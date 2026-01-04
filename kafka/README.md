@@ -109,6 +109,12 @@ docker exec -e JAVA_TOOL_OPTIONS='-Dotel.javaagent.enabled=false' -e KAFKA_OPTS=
 --bootstrap-server localhost:9092 \
 --alter --add-config 'producer_byte_rate=100,consumer_byte_rate=100' \
 --entity-type clients --entity-default
+
+# k8s
+kubectl exec -it -n applications deployment/kafka-deployment -- /opt/kafka/bin/kafka-configs.sh \
+--bootstrap-server kafka-service:9092 \
+--alter --add-config 'producer_byte_rate=100,consumer_byte_rate=100' \
+--entity-type clients --entity-default
 ```
 
 ```
@@ -116,6 +122,11 @@ docker exec -e JAVA_TOOL_OPTIONS='-Dotel.javaagent.enabled=false' -e KAFKA_OPTS=
 docker exec -u 0 kafka sh -c "\
     wget -qO /tmp/jmxterm.jar https://repo1.maven.org/maven2/org/cyclopsgroup/jmxterm/1.0.4/jmxterm-1.0.4-uber.jar && \
     echo 'beans' | java -cp /tmp/jmxterm.jar org.cyclopsgroup.jmxterm.boot.CliMain -l localhost:9101 -n"
+    
+# k8s
+kubectl exec -it deployment/kafka-deployment -n applications -- sh -c "\
+    wget -qO /tmp/jmxterm.jar https://repo1.maven.org/maven2/org/cyclopsgroup/jmxterm/1.0.4/jmxterm-1.0.4-uber.jar && \
+    echo 'beans' | java -cp /tmp/jmxterm.jar org.cyclopsgroup.jmxterm.boot.CliMain -l localhost:9101 -n"    
 ```
 
 ```
@@ -127,3 +138,19 @@ docker exec kafka tail -f /opt/kafka/logs/server.log | grep -i throttle
 ---
 
 ## Grafana
+
+Metrics
+
+![metrics.png](metrics.png)
+
+Logs
+
+![logs-grafana.png](logs-grafana.png)
+
+Grafana Kafka cluster board
+
+![board.png](board.png)
+
+Board kafka + Topic
+
+![board-kafka.png](board-kafka.png)

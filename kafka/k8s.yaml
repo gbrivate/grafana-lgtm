@@ -27,6 +27,8 @@ spec:
           ports:
             - name: kafka
               containerPort: 9092
+            - name: jmx
+              containerPort: 9101
           resources:
             requests:
               memory: "1Gi"
@@ -49,3 +51,6 @@ spec:
     - name: kafka
       port: 9092
       targetPort: 9092
+    - name: jmx
+      port: 9101
+      targetPort: 9101

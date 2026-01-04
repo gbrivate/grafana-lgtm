@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: fastapi-msc-kafka
-          image: fastapi-msc-kafka:latest
+          image: fastapi-msc-kafka:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001
@@ -67,7 +67,7 @@ spec:
     - host: localhost
       http:
         paths:
-          - path: /mfe/fastapi-test/(.*)
+          - path: /fastapi-kafka/(.*)
             pathType: ImplementationSpecific
             backend:
               service:

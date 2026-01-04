@@ -80,3 +80,19 @@ kubectl delete -n applications deployments.apps fastapi-msc-kafka-deployment
 ---
 ## Grafana
 
+Metrics
+
+![metrics.png](metrics.png)
+
+Logs
+
+![logs.png](logs.png)
+
+Traces
+
+![traces.png](traces.png)
+
+Service Graph
+
+![service-graph.png](service-graph.png)
+

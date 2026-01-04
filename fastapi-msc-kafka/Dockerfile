@@ -5,7 +5,7 @@ ENV LOG_LEVEL=info \
     TZ=America/Sao_Paulo
 
 # Core environment variables for OpenTelemetry
-ENV OTEL_SERVICE_NAME=fastapi-msc-test \
+ENV OTEL_SERVICE_NAME=fastapi-msc-kakfa \
     OTEL_RESOURCE_ATTRIBUTES="service.version=1.0,deployment.environment=development,team=my-team" \
     OTEL_EXPORTER_OTLP_COMPRESSION=gzip \
     OTEL_EXPORTER_OTLP_INSECURE=true \

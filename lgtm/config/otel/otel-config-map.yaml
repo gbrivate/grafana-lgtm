@@ -77,15 +77,15 @@ data:
       # -------------------------------
       # PostgreSQL Metrics Receiver
       # -------------------------------
-      #postgresql:
-      #  endpoint: postgres-service.datastore.svc.cluster.local:5432 # using k8s change for postgres-service.{namespace}.svc.cluster.local:5432
-      #  username: myuser
-      #  password: mypassword
-      #  databases:
-      #    - mydb
-      #  collection_interval: 5s
-      #  tls:
-      #    insecure: true
+      postgresql:
+        endpoint: postgres-service.datastore.svc.cluster.local:5432 # using k8s change for postgres-service.{namespace}.svc.cluster.local:5432
+        username: myuser
+        password: mypassword
+        databases:
+          - mydb
+        collection_interval: 5s
+        tls:
+          insecure: true
 
     extensions:
       health_check:
@@ -215,7 +215,7 @@ data:
             kubeletstats, 
             prometheus/self, 
             prometheus/ksm, 
-    #        postgresql, 
+            postgresql, 
             k8s_cluster,
             prometheus/ingress
           ]

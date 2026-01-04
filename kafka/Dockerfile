@@ -21,7 +21,7 @@ ENV TZ=America/Sao_Paulo \
 
 ENV KAFKA_OPTS="-javaagent:/opt/opentelemetry-javaagent.jar \
   -Dotel.resource.attributes=service.name=kafka \
-  -Dotel.exporter.otlp.endpoint=http://grafana-service.monitoring.svc.cluster.local:4317 \
+  -Dotel.exporter.otlp.endpoint=http://grafana-service.monitoring.svc.cluster.local:4318 \
   -Dotel.metrics.exporter=otlp \
   -Dotel.traces.exporter=otlp \
   -Dotel.logs.exporter=otlp \
@@ -36,6 +36,8 @@ ENV KAFKA_OPTS="-javaagent:/opt/opentelemetry-javaagent.jar \
   -Dcom.sun.management.jmxremote.authenticate=false \
   -Dcom.sun.management.jmxremote.ssl=false \
   -Dcom.sun.management.jmxremote.local.only=false \
-  -Djava.rmi.server.hostname=0.0.0.0"
+  -Djava.rmi.server.hostname=0.0.0.0 \
+  -Dcom.sun.management.jmxremote.port=9101 \
+  -Dcom.sun.management.jmxremote.rmi.port=9101"
 
 ENV KAFKA_HEAP_OPTS="-Xms1g -Xmx1g"
