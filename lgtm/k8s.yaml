@@ -92,15 +92,15 @@ spec:
             - name: otelcol-config
               mountPath: /otel-lgtm/otelcol-config.yaml
               subPath: otelcol-config.yaml
-#            - name: loki-config
-#              mountPath: /otel-lgtm/loki-config.yaml
-#              subPath: loki-config.yaml
+            - name: loki-config
+              mountPath: /otel-lgtm/loki-config.yaml
+              subPath: loki-config.yaml
+            - name: prometheus-config
+              mountPath: /otel-lgtm/prometheus/prometheus.yml
+              subPath: prometheus.yml
 #            - name: tempo-config
 #              mountPath: /otel-lgtm/tempo-config.yaml
 #              subPath: tempo-config.yaml
-#            - name: prometheus-config
-#              mountPath: /otel-lgtm/prometheus/prometheus.yml
-#              subPath: prometheus.yml
       volumes:
         # K8s instrumentation
         - name: varlogpods
@@ -114,12 +114,12 @@ spec:
         - name: otelcol-config
           configMap:
             name: otelcol-config
-#        - name: prometheus-config4
-#          configMap:
-#            name: prometheus-config
-#        - name: loki-config
-#          configMap:
-#            name: loki-config
+        - name: prometheus-config4
+          configMap:
+            name: prometheus-config
+        - name: loki-config
+          configMap:
+            name: loki-config
 #        - name: tempo-config
 #          configMap:
 #            name: tempo-config

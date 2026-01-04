@@ -48,20 +48,6 @@ data:
       k8s_cluster:
         collection_interval: 5s
 
-      # Scrape do kubelet para métricas adicionais
-      #      prometheus/kubelet:
-      #        config:
-      #          scrape_configs:
-      #            - job_name: "kubelet"
-      #              scheme: https
-      #              scrape_interval: 5s
-      #              tls_config:
-      #                insecure_skip_verify: true
-      #              bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-      #              static_configs:
-      #                - targets:
-      #                    - ${NODE_NAME}:10250
-
       # Scrape do OTel Collector (self-metrics)
       prometheus/self:
         config:
@@ -87,20 +73,6 @@ data:
               scrape_interval: 5s
               static_configs:
                 - targets: ["ingress-nginx-controller.ingress-nginx.svc.cluster.local:10254"]
-              
-                            
-
-      #      hostmetrics:
-      #        collection_interval: 5s
-      #        scrapers:
-      #          cpu: {}
-      #          disk: {}
-      #          filesystem: {}
-      #          load: {}
-      #          memory: {}
-      #          network: {}
-      #          paging: {}
-      #          processes: {}
 
       # -------------------------------
       # PostgreSQL Metrics Receiver
