@@ -14,7 +14,7 @@ data:
       filelog:
         include:
           - /var/log/pods/*/*/*.log
-          - /var/lib/postgresql/data/log/*.log
+          - /var/lib/postgresql/data/log/*.log # postgresql logs
         exclude: [ "/var/log/pods/*/otc-container/*.log" ]
         include_file_path: true
         start_at: beginning

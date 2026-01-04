@@ -66,10 +66,10 @@ kubectl apply -f k8s.yaml
 
 # Checking the pods status
 kubectl get pods -n monitoring
-kubectl get pods -n monitoring | grep lgtm
+kubectl get pods -n monitoring | grep grafana
 
 # Logging
-kubectl logs -n monitoring deployments/lgtm-deployment -f
+kubectl logs -n monitoring deployments/grafana-deployment -f
 
 # List service
 kubectl get svc -n monitoring | grep fastapi-mfe
@@ -78,8 +78,8 @@ kubectl get svc -n monitoring | grep fastapi-mfe
 kubectl port-forward svc/lgtm-service 8001:8001 -n monitoring
 
 # Restarting deploymenty 
-kubectl rollout restart deployment lgtm-deployment -n monitoring
+kubectl rollout restart deployment -n monitoring grafana-deployment 
 
 # Deleting k8s deployment 
-kubectl delete -n monitoring deployments.apps lgtm-deployment
+kubectl delete -n monitoring deployments.apps grafana-deployment
 ```

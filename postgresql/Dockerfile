@@ -9,6 +9,9 @@ ENV POSTGRES_USER=myuser \
     POSTGRES_DB=mydb \
     TZ=America/Sao_Paulo
 
+# Create the initialization script
+RUN echo "CREATE USER otel_user WITH PASSWORD 'mypassword'; GRANT pg_monitor TO otel_user; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;" > /docker-entrypoint-initdb.d/setup_otel.sql
+
 COPY config/postgresql.conf.sample /usr/local/share/postgresql/postgresql.conf.sample
 
 # --- Configure Structured Logging for Correlation ---
