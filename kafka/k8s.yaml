@@ -54,3 +54,23 @@ spec:
     - name: jmx
       port: 9101
       targetPort: 9101
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kafka-ingress
+  namespace: applications
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /kafka
+            pathType: Prefix
+            backend:
+              service:
+                name: kafka-service
+                port:
+                  number: 9092

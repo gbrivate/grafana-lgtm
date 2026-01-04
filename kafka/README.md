@@ -60,6 +60,7 @@ docker container remove kafka
 
 # Removing docker image
 docker image remove kafka:1.0
+
 ```
 ---
 
